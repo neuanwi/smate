@@ -7,8 +7,8 @@ public class GameManager : MonoBehaviour
 {
 	void Update()
 	{
-		if (Input.GetKeyDown(KeyCode.Escape))
-		{
+        if (SystemInput.GetKey(KeyCode.Escape))
+        {
 			Quit();
 		}
 	}

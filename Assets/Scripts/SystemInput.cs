@@ -160,8 +160,9 @@ public class SystemInput
 		{KeyCode.Keypad8, 0x68},
 		{KeyCode.Keypad4, 0x64},
 		{KeyCode.Keypad6, 0x66},
-		{KeyCode.Keypad2, 0x62},
-	};
+        {KeyCode.Keypad2, 0x62},
+        {KeyCode.Escape, 0x1B},
+    };
 	
 	static Dictionary<KeyCode, KeyState> KeyStates = new Dictionary<KeyCode, KeyState>();
 	public struct KeyState
