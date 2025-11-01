@@ -1,26 +1,24 @@
-using System.Collections;
+ï»¿using System.Collections;
 using UnityEngine;
 
 public class KirbyAI : MonoBehaviour
 {
-    // ¼³Á¤°ª (Inspector Ã¢¿¡¼­ ¼öÁ¤ °¡´É)
-    public float moveSpeed = 1.5f;     // °È´Â ¼Óµµ
-    public float minIdleTime = 1.0f;   // ÃÖ¼ÒÇÑ °¡¸¸È÷ ÀÖ´Â ½Ã°£
-    public float maxIdleTime = 3.0f;   // ÃÖ´ëÇÑ °¡¸¸È÷ ÀÖ´Â ½Ã°£
-    public float minMoveTime = 2.0f;   // ÃÖ¼ÒÇÑ °È´Â ½Ã°£
-    public float maxMoveTime = 4.0f;   // ÃÖ´ëÇÑ °È´Â ½Ã°£
+    // ì„¤ì •ê°’ (Inspector ì°½ì—ì„œ ìˆ˜ì • ê°€ëŠ¥)
+    public float moveSpeed = 1.5f;     // ê±·ëŠ” ì†ë„
+    public float minIdleTime = 1.0f;   // ìµœì†Œí•œ ê°€ë§Œíˆ ìˆëŠ” ì‹œê°„
+    public float maxIdleTime = 3.0f;   // ìµœëŒ€í•œ ê°€ë§Œíˆ ìˆëŠ” ì‹œê°„
+    public float minMoveTime = 2.0f;   // ìµœì†Œí•œ ê±·ëŠ” ì‹œê°„
+    public float maxMoveTime = 4.0f;   // ìµœëŒ€í•œ ê±·ëŠ” ì‹œê°„
     public float changeYDirectionChance = 0.5f;
 
-    // --- »õ·Î Ãß°¡µÈ ¼³Á¤°ª ---
-    [Range(0, 1)] // 0% ~ 100% »çÀÌ·Î Á¶Àı
-    public float sighChance = 0.3f;    // ÇÑ¼û ½¯ È®·ü (0.3 = 30%)
-    public float sighDuration = 2.0f;  // ¡Ú¡Ú¡Ú ÇÑ¼û ¾Ö´Ï¸ŞÀÌ¼ÇÀÇ '½ÇÁ¦ ±æÀÌ' (ÃÊ ´ÜÀ§)
-    // ------------------------
+    [Range(0, 1)]
+    public float sighChance = 0.3f;
+    public float sighDuration = 2.0f; // í•œìˆ¨ ì• ë‹ˆë©”ì´ì…˜ ì‹¤ì œ ê¸¸ì´
 
     private Animator anim;
     private SpriteRenderer spriteRenderer;
 
-    // --- È­¸é °æ°è¸¦ À§ÇÑ º¯¼öµé (ÀÌÀü°ú µ¿ÀÏ) ---
+    // --- í™”ë©´ ê²½ê³„ë¥¼ ìœ„í•œ ë³€ìˆ˜ë“¤ (ì´ì „ê³¼ ë™ì¼) ---
     private Camera mainCamera;
     private float minX, maxX, minY, maxY;
     private float spriteHalfWidth, spriteHalfHeight;
@@ -30,7 +28,7 @@ public class KirbyAI : MonoBehaviour
         anim = GetComponent<Animator>();
         spriteRenderer = GetComponent<SpriteRenderer>();
 
-        // --- È­¸é °æ°è °è»ê (ÀÌÀü°ú µ¿ÀÏ) ---
+        // --- í™”ë©´ ê²½ê³„ ê³„ì‚° (ì´ì „ê³¼ ë™ì¼) ---
         mainCamera = Camera.main;
         spriteHalfWidth = spriteRenderer.bounds.size.x / 2f;
         spriteHalfHeight = spriteRenderer.bounds.size.y / 2f;
@@ -45,7 +43,7 @@ public class KirbyAI : MonoBehaviour
         StartCoroutine(ThinkAndAct());
     }
 
-    // --- È­¸é °æ°è Á¦ÇÑ (ÀÌÀü°ú µ¿ÀÏ) ---
+    // --- í™”ë©´ ê²½ê³„ ì œí•œ (ì´ì „ê³¼ ë™ì¼) ---
     void LateUpdate()
     {
         Vector3 currentPosition = transform.position;
@@ -55,37 +53,28 @@ public class KirbyAI : MonoBehaviour
     }
 
 
-    // --- AI Çàµ¿ ·ÎÁ÷ (¼öÁ¤µÊ) ---
+    // --- AI í–‰ë™ ë¡œì§ (ì´ì „ê³¼ ë™ì¼) ---
     IEnumerator ThinkAndAct()
     {
         while (true)
         {
-            // --- 1. IDLE ¶Ç´Â SIGH »óÅÂ ---
-            // '°¡¸¸È÷ ÀÖ±â'·Î ±âº» ¼³Á¤
+            // --- 1. IDLE ë˜ëŠ” SIGH ìƒíƒœ ---
             anim.SetBool("isWalking", false);
 
-            // ·£´ı È®·ü·Î 'ÇÑ¼û'À» ½¯Áö '±×³É °¡¸¸È÷ ÀÖÀ»Áö' °áÁ¤
             if (Random.value < sighChance)
             {
-                // --- 1a. ÇÑ¼û ½¬±â ---
-                // "doSigh" ¹æ¾Æ¼è¸¦ ´ç±è (¾Ö´Ï¸ŞÀÌÅÍ°¡ Sigh »óÅÂ·Î ÀüÈ¯)
-                anim.SetTrigger("doSigh");
-
-                // ¡Ú ÇÑ¼û ¾Ö´Ï¸ŞÀÌ¼ÇÀÌ '³¡³¯ ¶§±îÁö' ±â´Ù·ÁÁÜ
-                // (Sigh DurationÀ» ¾Ö´Ï¸ŞÀÌ¼Ç ±æÀÌ¿Í ¸ÂÃç¾ß ÇÔ)
+                // --- 1a. í•œìˆ¨ ì‰¬ê¸° ---
+                anim.SetTrigger("doSigh"); // (ì´ë¦„ì´ "Kirby_Sighing"ì´ë©´ ê·¸ê±¸ë¡œ ì“°ì„¸ìš”!)
                 yield return new WaitForSeconds(sighDuration);
             }
             else
             {
-                // --- 1b. ±×³É °¡¸¸È÷ ÀÖ±â ---
-                // 1ÃÊ~3ÃÊ »çÀÌÀÇ ·£´ıÇÑ ½Ã°£ µ¿¾È ±â´Ù¸²
+                // --- 1b. ê·¸ëƒ¥ ê°€ë§Œíˆ ìˆê¸° ---
                 float idleTime = Random.Range(minIdleTime, maxIdleTime);
                 yield return new WaitForSeconds(idleTime);
             }
 
-            // (ÀÌÁ¦ ÇÑ¼û ¶Ç´Â ¾ÆÀÌµé »óÅÂ°¡ ³¡³µÀ½)
-
-            // --- 2. °È±â »óÅÂ (ÀÌÀü°ú µ¿ÀÏ) ---
+            // --- 2. ê±·ê¸° ìƒíƒœ (ì´ì „ê³¼ ë™ì¼) ---
             anim.SetBool("isWalking", true);
 
             float xDirection = (Random.Range(0, 2) == 0) ? -1f : 1f;
@@ -109,5 +98,42 @@ public class KirbyAI : MonoBehaviour
                 yield return null;
             }
         }
+    }
+
+    // --- â¬‡ï¸â¬‡ï¸â¬‡ï¸ ìƒˆë¡œ ì¶”ê°€ëœ ë“œë˜ê·¸ ê¸°ëŠ¥ í•¨ìˆ˜ 3ê°œ â¬‡ï¸â¬‡ï¸â¬‡ï¸ ---
+
+    // 1. ì»¤ë¹„ì˜ Colliderì— ë§ˆìš°ìŠ¤ í´ë¦­ì´ 'ì‹œì‘'ë  ë•Œ 1ë²ˆ í˜¸ì¶œë¨
+    void OnMouseDown()
+    {
+        // 1. 'isDragging' ìŠ¤ìœ„ì¹˜ë¥¼ ì¼ ë‹¤ (ì• ë‹ˆë©”ì´ì…˜ ì¬ìƒ)
+        anim.SetBool("isDragging", true);
+
+        // 2. AIì˜ 'ìƒê°'ì„ ë©ˆì¶˜ë‹¤! (ê°€ì¥ ì¤‘ìš”)
+        // (ThinkAndAct ì½”ë£¨í‹´ì„ ê°•ì œ ì¢…ë£Œí•´ì„œ, ë“œë˜ê·¸ ì¤‘ì— ë§˜ëŒ€ë¡œ ê±·ì§€ ëª»í•˜ê²Œ í•¨)
+        StopAllCoroutines();
+    }
+
+    // 2. ë§ˆìš°ìŠ¤ë¥¼ 'í´ë¦­í•œ ì±„ë¡œ ì›€ì§ì´ëŠ”' ë™ì•ˆ ë§¤ í”„ë ˆì„ í˜¸ì¶œë¨
+    void OnMouseDrag()
+    {
+        // 1. ë§ˆìš°ìŠ¤ì˜ í˜„ì¬ ìœ„ì¹˜ë¥¼ ê²Œì„ ì„¸ê³„ ì¢Œí‘œë¡œ ë³€í™˜
+        // (mainCameraëŠ” Start()ì—ì„œ ì´ë¯¸ ì°¾ì•„ë†¨ìŒ)
+        Vector3 mousePos = mainCamera.ScreenToWorldPoint(Input.mousePosition);
+
+        // 2. ì»¤ë¹„ì˜ ìœ„ì¹˜ë¥¼ ë§ˆìš°ìŠ¤ ìœ„ì¹˜ë¡œ ê°•ì œ ì´ë™
+        // (Zì¶•ì€ ì›ë˜ ê°’ìœ¼ë¡œ ìœ ì§€í•´ì•¼ ì¹´ë©”ë¼ì—ì„œ ë³´ì„)
+        transform.position = new Vector3(mousePos.x, mousePos.y, transform.position.z);
+
+        // (ì°¸ê³ : ì´ë ‡ê²Œ ì›€ì§ì—¬ë„ LateUpdate()ê°€ ê²½ê³„ì„  ë°–ìœ¼ë¡œ ëª» ë‚˜ê°€ê²Œ ì¡ì•„ì¤ë‹ˆë‹¤)
+    }
+
+    // 3. ë§ˆìš°ìŠ¤ ë²„íŠ¼ì„ 'ë—„' ë•Œ 1ë²ˆ í˜¸ì¶œë¨
+    void OnMouseUp()
+    {
+        // 1. 'isDragging' ìŠ¤ìœ„ì¹˜ë¥¼ ëˆë‹¤ (Idle ì• ë‹ˆë©”ì´ì…˜ìœ¼ë¡œ ëŒì•„ê°)
+        anim.SetBool("isDragging", false);
+
+        // 2. ë©ˆì·„ë˜ AIì˜ 'ìƒê°'ì„ ë‹¤ì‹œ ì‹œì‘ì‹œí‚¨ë‹¤!
+        StartCoroutine(ThinkAndAct());
     }
 }

@@ -83,18 +83,26 @@ public class TransparentWindow : MonoBehaviour
         Camera.backgroundColor = new Color();
         Camera.clearFlags = CameraClearFlags.SolidColor;
 
-        if (fullscreen && !customResolution)
-        {
-            screenResolution = new Vector2Int(Screen.currentResolution.width, Screen.currentResolution.height);
-        }
+        // --- 수정된 부분 ---
+        // 'customResolution' 설정을 무시하고,
+        // 항상 모니터의 실제 네이티브 해상도를 사용하도록 강제합니다.
 
-        Screen.SetResolution(screenResolution.x, screenResolution.y, fullscreen ? FullScreenMode.FullScreenWindow : FullScreenMode.Windowed);
+        // 1. 모니터의 실제 해상도를 가져옵니다.
+        int nativeWidth = Display.main.systemWidth;
+        int nativeHeight = Display.main.systemHeight;
+
+        // 2. 스크립트 내부 변수도 업데이트합니다.
+        screenResolution = new Vector2Int(nativeWidth, nativeHeight);
+
+        // 3. '모니터의 실제 해상도'로 게임을 설정합니다.
+        Screen.SetResolution(screenResolution.x, screenResolution.y, FullScreenMode.FullScreenWindow);
+        // --- 수정 끝 ---
 
         Application.targetFrameRate = targetFrameRate;
         Application.runInBackground = true;
 
 #if !UNITY_EDITOR
-		fWidth = screenResolution.x;
+        fWidth = screenResolution.x;
 		fHeight = screenResolution.y;
 		margins = new Rectangle() {Left = -1};
 		hwnd = GetActiveWindow();
