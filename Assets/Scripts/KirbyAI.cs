@@ -160,7 +160,7 @@ public class KirbyAI : MonoBehaviour
 
     void OnMouseOver()
     {
-        if (Input.GetMouseButtonDown(1) && !bMouseDrag)
+        if ((SystemInput.GetMouseButtonDown(1)||Input.GetMouseButtonDown(1)) && !bMouseDrag)
         {
             StopAllCoroutines();
 
@@ -170,7 +170,7 @@ public class KirbyAI : MonoBehaviour
                 contextMenuPanel.transform.position=gameObject.transform.position;
             }
         }
-        else if (Input.GetMouseButtonDown(0))
+        else if (SystemInput.GetMouseButtonDown(0) || Input.GetMouseButtonDown(0))
         {
             StartCoroutine(ThinkAndAct());
 
