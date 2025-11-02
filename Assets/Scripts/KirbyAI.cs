@@ -23,6 +23,19 @@ public class KirbyAI : MonoBehaviour
     private float minX, maxX, minY, maxY;
     private float spriteHalfWidth, spriteHalfHeight;
 
+    /// <summary>
+    /// Setting UI 관련
+    /// </summary>
+
+    //마우스가 끌고 있는 상태인지 기록
+    private bool bMouseDrag = false;
+
+    // UI 패널을 연결할 변수 추가
+    public GameObject contextMenuPanel;
+
+    // UI 오프셋 변수 추가
+    public Vector3 uiOffset = new Vector3(0f, 50f, 0f);
+
     void Start()
     {
         anim = GetComponent<Animator>();
@@ -39,6 +52,12 @@ public class KirbyAI : MonoBehaviour
         minY = minScreenPos.y + spriteHalfHeight;
         maxY = maxScreenPos.y - spriteHalfHeight;
         // ------------------------------------------
+
+        //시작할 때 UI 패널을 숨김
+        if (contextMenuPanel != null)
+        {
+            contextMenuPanel.SetActive(false);
+        }
 
         StartCoroutine(ThinkAndAct());
     }
@@ -109,6 +128,8 @@ public class KirbyAI : MonoBehaviour
         // 2. AI의 '생각'을 멈춘다! (가장 중요)
         // (ThinkAndAct 코루틴을 강제 종료해서, 드래그 중에 맘대로 걷지 못하게 함)
         StopAllCoroutines();
+
+        bMouseDrag = true;
     }
 
     // 2. 마우스를 '클릭한 채로 움직이는' 동안 매 프레임 호출됨
@@ -133,5 +154,30 @@ public class KirbyAI : MonoBehaviour
 
         // 2. 멈췄던 AI의 '생각'을 다시 시작시킨다!
         StartCoroutine(ThinkAndAct());
+
+        bMouseDrag = false;
+    }
+
+    void OnMouseOver()
+    {
+        if (Input.GetMouseButtonDown(1) && !bMouseDrag)
+        {
+            StopAllCoroutines();
+
+            if (contextMenuPanel != null)
+            {
+                contextMenuPanel.SetActive(true);
+                contextMenuPanel.transform.position=gameObject.transform.position;
+            }
+        }
+        else if (Input.GetMouseButtonDown(0))
+        {
+            StartCoroutine(ThinkAndAct());
+
+            if (contextMenuPanel != null)
+            {
+                contextMenuPanel.SetActive(false);
+            }
+        }
     }
 }
