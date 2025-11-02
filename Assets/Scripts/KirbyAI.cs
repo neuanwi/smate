@@ -12,8 +12,8 @@ public class KirbyAI : MonoBehaviour
     public float changeYDirectionChance = 0.5f;
 
     [Range(0, 1)]
-    public float sighChance = 0.3f;
-    public float sighDuration = 2.0f; // 한숨 애니메이션 실제 길이
+    public float event1Chance = 0.3f;
+    public float event1Duration = 2.0f; // 한숨 애니메이션 실제 길이
 
     private Animator anim;
     private SpriteRenderer spriteRenderer;
@@ -61,15 +61,13 @@ public class KirbyAI : MonoBehaviour
             // --- 1. IDLE 또는 SIGH 상태 ---
             anim.SetBool("isWalking", false);
 
-            if (Random.value < sighChance)
-            {
-                // --- 1a. 한숨 쉬기 ---
-                anim.SetTrigger("doSigh"); // (이름이 "Kirby_Sighing"이면 그걸로 쓰세요!)
-                yield return new WaitForSeconds(sighDuration);
+            if (Random.value < event1Chance)
+            {                
+                anim.SetTrigger("Event1"); 
+                yield return new WaitForSeconds(event1Duration);
             }
             else
-            {
-                // --- 1b. 그냥 가만히 있기 ---
+            {             
                 float idleTime = Random.Range(minIdleTime, maxIdleTime);
                 yield return new WaitForSeconds(idleTime);
             }
