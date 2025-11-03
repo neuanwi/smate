@@ -172,7 +172,7 @@ public class KirbyAI : MonoBehaviour
         }
         else if (SystemInput.GetMouseButtonDown(0) || Input.GetMouseButtonDown(0))
         {
-            StartCoroutine(ThinkAndAct());
+            
 
             if (contextMenuPanel != null)
             {
