@@ -28,6 +28,9 @@ public class ChatManager : MonoBehaviour
 
     // (이 외에 채팅창을 여는 버튼은 1단계처럼 밖에서 별도로 연결)
 
+    // ✅ [추가] 배경 클릭을 감지할 오브젝트
+    public GameObject backgroundClickCatcher;
+
     void Start()
     {
         // 시작할 때 채팅창 숨김
@@ -47,6 +50,12 @@ public class ChatManager : MonoBehaviour
         {
             closeButton.onClick.AddListener(CloseChatPanel);
         }
+
+        // ✅ [추가] 배경 클릭 가로채기 오브젝트도 숨김
+        if (backgroundClickCatcher != null)
+        {
+            backgroundClickCatcher.SetActive(false);
+        }
     }
 
     /// <summary>
@@ -57,7 +66,12 @@ public class ChatManager : MonoBehaviour
         if (chatPanel != null)
         {
             chatPanel.SetActive(true);
-            AddMessageToLog("시스템", $"'{currentPersonaDomain}' 인격과 대화를 시작합니다.");
+            //AddMessageToLog("", $"'{currentPersonaDomain}' 와 대화시작!!");
+        }
+        // ✅ [추가] 배경 클릭 가로채기 오브젝트도 활성화
+        if (backgroundClickCatcher != null)
+        {
+            backgroundClickCatcher.SetActive(true);
         }
     }
 
@@ -69,6 +83,11 @@ public class ChatManager : MonoBehaviour
         if (chatPanel != null)
         {
             chatPanel.SetActive(false);
+        }
+        // ✅ [추가] 배경 클릭 가로채기 오브젝트도 비활성화
+        if (backgroundClickCatcher != null)
+        {
+            backgroundClickCatcher.SetActive(false);
         }
     }
 
