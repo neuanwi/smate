@@ -5,40 +5,29 @@ using UnityEngine;
 public class CharacterManager : MonoBehaviour
 {
     public GameObject mainUIPanelToClose;
-    // 1. Inspector 창에서 우리가 가진 모든 캐릭터를 이 리스트에 등록합니다.
     public List<GameObject> allCharacters;
-
-    // 2. 현재 활성화된 캐릭터가 리스트의 몇 번째인지 기억합니다.
     private int currentCharacterIndex = 0;
-
-    // 3. (추가) 이 매니저를 '싱글톤(Singleton)'으로 만듭니다.
-    //    (어디서든 "CharacterManager.instance"로 쉽게 접근 가능)
     public static CharacterManager instance;
 
     void Awake()
     {
-        // 4. instance를 자기 자신으로 설정
         if (instance == null)
         {
             instance = this;
         }
         else
         {
-            // 이미 존재하면 스스로 파괴 (중복 방지)
             Destroy(gameObject);
         }
     }
 
-
     void Start()
     {
-        // 5. 게임이 시작되면, '모든' 캐릭터를 일단 다 끕니다.
         foreach (GameObject character in allCharacters)
         {
             character.SetActive(false);
         }
 
-        // 6. 리스트의 첫 번째(Index 0) 캐릭터만 켭니다.
         if (allCharacters.Count > 0)
         {
             allCharacters[currentCharacterIndex].SetActive(true);
@@ -61,12 +50,33 @@ public class CharacterManager : MonoBehaviour
             return;
         }
 
-        // 1. 현재 켜져있는 캐릭터를 끈다.
+        // --- ▼▼▼ 여기가 수정된 부분입니다 ▼▼▼ ---
+
+        // 1. 현재 켜져있는 (old) 캐릭터의 Transform을 가져옵니다.
+        Transform oldCharacterTransform = allCharacters[currentCharacterIndex].transform;
+
+        // 2. (NEW) 현재 캐릭터의 위치와 회전값을 변수에 저장합니다.
+        Vector3 oldPosition = oldCharacterTransform.position;
+        Quaternion oldRotation = oldCharacterTransform.rotation;
+
+        // 3. (Original) 현재 캐릭터를 끕니다.
         allCharacters[currentCharacterIndex].SetActive(false);
 
-        // 2. 선택된 인덱스로 캐릭터를 바꾼다.
+        // 4. (Original) 인덱스를 새 캐릭터로 업데이트합니다.
         currentCharacterIndex = index;
+
+        // 5. (NEW) 이제 '새' 캐릭터의 Transform을 가져옵니다.
+        Transform newCharacterTransform = allCharacters[currentCharacterIndex].transform;
+
+        // 6. (NEW) 새 캐릭터의 위치/회전값을 2번에서 저장한 값으로 덮어씁니다.
+        newCharacterTransform.position = oldPosition;
+        newCharacterTransform.rotation = oldRotation;
+
+        // 7. (Original) 새 캐릭터를 켭니다. (이제 oldPosition 위치에서 켜집니다)
         allCharacters[currentCharacterIndex].SetActive(true);
+
+        // --- ▲▲▲ 수정 끝 ▲▲▲ ---
+
         if (mainUIPanelToClose != null)
         {
             mainUIPanelToClose.SetActive(false);

@@ -15,6 +15,8 @@ public class KirbyAI : MonoBehaviour
     public float event1Chance = 0.3f;
     public float event1Duration = 2.0f; // 한숨 애니메이션 실제 길이
 
+    
+
     private Animator anim;
     private SpriteRenderer spriteRenderer;
 
@@ -35,6 +37,7 @@ public class KirbyAI : MonoBehaviour
 
     // UI 오프셋 변수 추가
     public Vector3 uiOffset = new Vector3(0f, 50f, 0f);
+    private bool isPausedByMenu = false; // 메뉴 때문에 AI가 멈췄는지 기억
 
     void Start()
     {
@@ -60,6 +63,16 @@ public class KirbyAI : MonoBehaviour
         }
 
         StartCoroutine(ThinkAndAct());
+    }
+
+    void Update()
+    {
+        // AI가 메뉴 때문에 멈췄는데, 메뉴가 (허공 클릭 등으로) 꺼졌다면
+        if (isPausedByMenu && !contextMenuPanel.activeSelf && !bMouseDrag)
+        {
+            isPausedByMenu = false; // AI를 다시 시작시킬 거니까, 상태를 리셋
+            StartCoroutine(ThinkAndAct()); // AI(생각) 다시 시작!
+        }
     }
 
     // --- 화면 경계 제한 (이전과 동일) ---
@@ -163,6 +176,8 @@ public class KirbyAI : MonoBehaviour
         if (Input.GetMouseButtonDown(1) && !bMouseDrag)
         {
             StopAllCoroutines();
+
+            isPausedByMenu = true; // AI를 메뉴 때문에 멈췄다고 기록
 
             if (contextMenuPanel != null)
             {
