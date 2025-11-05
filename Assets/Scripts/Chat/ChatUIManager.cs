@@ -9,6 +9,9 @@ using System.Text.RegularExpressions; // 👈 "(117자)" 꼬리표 제거용
 
 public class ChatManager : MonoBehaviour
 {
+
+    public AlarmManager alarmManager;
+
     [Header("Backend Settings")]
     public string backendBaseUrl = "http://localhost:8080/gemini/simple"; // 백엔드 주소
     public string currentSessionId = "unityUser001";                      // 세션 ID
@@ -54,6 +57,19 @@ public class ChatManager : MonoBehaviour
                     OnSend();
             });
         }
+
+        // ✅ AlarmManager 자동 연결 (Inspector에서 비어 있으면 씬에서 자동으로 찾기)
+        if (alarmManager == null)
+        {
+            alarmManager = FindFirstObjectByType<AlarmManager>();
+
+            if (alarmManager == null)
+            {
+                Debug.LogError("[ChatManager] AlarmManager를 씬에서 찾을 수 없습니다. " +
+                               "Hierarchy에 AlarmManager 오브젝트를 추가하거나, Inspector에 직접 할당하세요.");
+            }
+        }
+
     }
 
     void Update()
@@ -157,6 +173,12 @@ public class ChatManager : MonoBehaviour
 
                 // ✅ 누적 대신 덮어쓰기 + 타자 효과로 출력
                 TypewriterTo(chatLogText, chatLogScrollRect, toShow, charDelay);
+
+                // ✅ 알람 기능 추가 위치
+                if (message.Contains("알람") || message.Contains("깨워") || message.Contains("설정"))
+                {
+                    alarmManager.TryCreateAlarmFromMessage(message);
+                }
             }
         }
     }
