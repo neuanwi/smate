@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "com.nobi.roundedcorners": "file:C:/Users/roy17/Downloads/Unity-UI-Rounded-Corners-master/Unity-UI-Rounded-Corners-master",
     "com.unity.2d.spriteshape": "12.0.1",
     "com.unity.2d.tilemap": "1.0.0",
     "com.unity.ai.navigation": "2.0.9",
