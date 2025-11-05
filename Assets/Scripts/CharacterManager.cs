@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class CharacterManager : MonoBehaviour
 {
+    public GameObject mainUIPanelToClose;
     // 1. Inspector 창에서 우리가 가진 모든 캐릭터를 이 리스트에 등록합니다.
     public List<GameObject> allCharacters;
 
@@ -66,5 +67,9 @@ public class CharacterManager : MonoBehaviour
         // 2. 선택된 인덱스로 캐릭터를 바꾼다.
         currentCharacterIndex = index;
         allCharacters[currentCharacterIndex].SetActive(true);
+        if (mainUIPanelToClose != null)
+        {
+            mainUIPanelToClose.SetActive(false);
+        }
     }
 }
