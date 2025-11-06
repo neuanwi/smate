@@ -233,7 +233,6 @@ GameObject:
   - component: {fileID: 62894443}
   - component: {fileID: 62894442}
   - component: {fileID: 62894441}
-  - component: {fileID: 62894445}
   m_Layer: 0
   m_Name: UIMANAGER
   m_TagString: Untagged
@@ -291,10 +290,7 @@ MonoBehaviour:
   popupSpawner: {fileID: 62894441}
   inputFieldAnimator: {fileID: 62894442}
   backgroundClickCatcher: {fileID: 389702330}
-  backendBaseUrl: http://localhost:8080/gemini/simple
-  currentSessionId: unityUser001
-  currentPersonaDomain: tsundere
-  alarmManager: {fileID: 62894445}
+  backendApiUrl: https://your-backend-server.com/api/chat
 --- !u!4 &62894444
 Transform:
   m_ObjectHideFlags: 0
@@ -310,18 +306,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &62894445
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 62894440}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 72e0b3354a8eadf4f9ba668b67a48d7d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AlarmManager
 --- !u!1 &69396559
 GameObject:
   m_ObjectHideFlags: 0
@@ -1977,9 +1961,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "\u200B"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 124f61da0943a8742a176568cf90b713, type: 2}
-  m_sharedMaterial: {fileID: 1324086525518498305, guid: 124f61da0943a8742a176568cf90b713,
-    type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -2339,11 +2322,10 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 
+  m_text: Enter text...
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 124f61da0943a8742a176568cf90b713, type: 2}
-  m_sharedMaterial: {fileID: 1324086525518498305, guid: 124f61da0943a8742a176568cf90b713,
-    type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -2367,8 +2349,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 30
-  m_fontSizeBase: 30
+  m_fontSize: 14
+  m_fontSizeBase: 14
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -2936,19 +2918,7 @@ MonoBehaviour:
   m_CharacterLimit: 0
   m_OnEndEdit:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 62894443}
-        m_TargetAssemblyTypeName: ChatInputManager, Assembly-CSharp
-        m_MethodName: OnSubmitQuestion
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
   m_OnSubmit:
     m_PersistentCalls:
       m_Calls: []
@@ -2978,7 +2948,7 @@ MonoBehaviour:
   m_CaretWidth: 1
   m_ReadOnly: 0
   m_RichText: 1
-  m_GlobalFontAsset: {fileID: 11400000, guid: 124f61da0943a8742a176568cf90b713, type: 2}
+  m_GlobalFontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_OnFocusSelectAll: 1
   m_ResetOnDeActivation: 1
   m_KeepTextSelectionVisible: 0
