@@ -15,7 +15,7 @@ public class KirbyAI : MonoBehaviour
     public float event1Chance = 0.3f;
     public float event1Duration = 2.0f; // 한숨 애니메이션 실제 길이
 
-    
+
 
     private Animator anim;
     private SpriteRenderer spriteRenderer;
@@ -34,6 +34,11 @@ public class KirbyAI : MonoBehaviour
 
     // UI 패널을 연결할 변수 추가
     public GameObject contextMenuPanel;
+
+    // --- ⬇️⬇️⬇️ 여기에 두 줄을 추가하세요! ⬇️⬇️⬇️ ---
+    public GameObject characterGridPanel;       // 캐릭터 선택 그리드 UI
+    public GameObject gridBackgroundCatcher;    // 그리드 배경 클릭 캐처
+    // --- ⬆️⬆️⬆️ 추가 끝 ⬆️⬆️⬆️ ---
 
     // UI 오프셋 변수 추가
     public Vector3 uiOffset = new Vector3(0f, 50f, 0f);
@@ -62,6 +67,17 @@ public class KirbyAI : MonoBehaviour
             contextMenuPanel.SetActive(false);
         }
 
+        // (추가) 시작할 때 그리드 패널들도 숨김
+        if (characterGridPanel != null)
+        {
+            characterGridPanel.SetActive(false);
+        }
+        if (gridBackgroundCatcher != null)
+        {
+            gridBackgroundCatcher.SetActive(false);
+        }
+
+
         StartCoroutine(ThinkAndAct());
     }
 
@@ -70,6 +86,13 @@ public class KirbyAI : MonoBehaviour
         // AI가 메뉴 때문에 멈췄는데, 메뉴가 (허공 클릭 등으로) 꺼졌다면
         if (isPausedByMenu && !contextMenuPanel.activeSelf && !bMouseDrag)
         {
+            // (추가) 그리드 패널도 혹시 모르니 껐는지 확인
+            if (characterGridPanel != null && characterGridPanel.activeSelf)
+            {
+                // 그리드 패널이 켜져있다면 AI는 계속 멈춰있어야 함
+                return;
+            }
+
             isPausedByMenu = false; // AI를 다시 시작시킬 거니까, 상태를 리셋
             StartCoroutine(ThinkAndAct()); // AI(생각) 다시 시작!
         }
@@ -94,12 +117,12 @@ public class KirbyAI : MonoBehaviour
             anim.SetBool("isWalking", false);
 
             if (Random.value < event1Chance)
-            {                
-                anim.SetTrigger("Event1"); 
+            {
+                anim.SetTrigger("Event1");
                 yield return new WaitForSeconds(event1Duration);
             }
             else
-            {             
+            {
                 float idleTime = Random.Range(minIdleTime, maxIdleTime);
                 yield return new WaitForSeconds(idleTime);
             }
@@ -143,6 +166,18 @@ public class KirbyAI : MonoBehaviour
         StopAllCoroutines();
 
         bMouseDrag = true;
+
+        // --- ⬇️⬇️⬇️ 여기가 수정된 부분입니다! ⬇️⬇️⬇️ ---
+        // 3. 드래그가 시작되면 캐릭터 선택 관련 UI들을 강제로 숨깁니다.
+        if (characterGridPanel != null)
+        {
+            characterGridPanel.SetActive(false);
+        }
+        if (gridBackgroundCatcher != null)
+        {
+            gridBackgroundCatcher.SetActive(false);
+        }
+        // --- ⬆️⬆️⬆️ 수정 끝 ⬆️⬆️⬆️ ---
     }
 
     // 2. 마우스를 '클릭한 채로 움직이는' 동안 매 프레임 호출됨
@@ -173,7 +208,10 @@ public class KirbyAI : MonoBehaviour
 
     void OnMouseOver()
     {
-        if (Input.GetMouseButtonDown(1) && !bMouseDrag)
+        // (수정) 그리드 패널이 켜져있을 때는 우클릭 메뉴가 뜨지 않도록 조건 추가
+        bool isGridPanelActive = (characterGridPanel != null && characterGridPanel.activeSelf);
+
+        if (Input.GetMouseButtonDown(1) && !bMouseDrag && !isGridPanelActive) // 👈 조건 추가
         {
             StopAllCoroutines();
 
@@ -187,7 +225,6 @@ public class KirbyAI : MonoBehaviour
         }
         else if (Input.GetMouseButtonDown(0))
         {
-
             if (contextMenuPanel != null)
             {
                 contextMenuPanel.SetActive(false);

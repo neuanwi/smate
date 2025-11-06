@@ -23,7 +23,7 @@ public class ShihoAI : MonoBehaviour
     private float minX, maxX, minY, maxY;
     private float spriteHalfWidth, spriteHalfHeight;
 
-    // --- ⬇️⬇️⬇️ KirbyAI의 UI 기능을 여기에 추가 ⬇️⬇️⬇️ ---
+    // --- ⬇️⬇️⬇️ UI 기능을 여기에 추가 ⬇️⬇️⬇️ ---
 
     /// <summary>
     /// Setting UI 관련
@@ -34,6 +34,11 @@ public class ShihoAI : MonoBehaviour
 
     // UI 패널을 연결할 변수 추가
     public GameObject contextMenuPanel;
+
+    // --- ⬇️⬇️⬇️ 여기에 두 줄을 추가하세요! ⬇️⬇️⬇️ ---
+    public GameObject characterGridPanel;       // 캐릭터 선택 그리드 UI
+    public GameObject gridBackgroundCatcher;    // 그리드 배경 클릭 캐처
+    // --- ⬆️⬆️⬆️ 추가 끝 ⬆️⬆️⬆️ ---
 
     // AI가 메뉴 때문에 멈췄는지 기억
     private bool isPausedByMenu = false;
@@ -57,24 +62,41 @@ public class ShihoAI : MonoBehaviour
         maxY = maxScreenPos.y - spriteHalfHeight;
         // ------------------------------------------
 
-        // --- ⬇️⬇️⬇️ KirbyAI의 UI 기능을 여기에 추가 ⬇️⬇️⬇️ ---
+        // --- ⬇️⬇️⬇️ UI 기능을 여기에 추가 ⬇️⬇️⬇️ ---
         //시작할 때 UI 패널을 숨김
         if (contextMenuPanel != null)
         {
             contextMenuPanel.SetActive(false);
+        }
+
+        // (추가) 시작할 때 그리드 패널들도 숨김
+        if (characterGridPanel != null)
+        {
+            characterGridPanel.SetActive(false);
+        }
+        if (gridBackgroundCatcher != null)
+        {
+            gridBackgroundCatcher.SetActive(false);
         }
         // --- ⬆️⬆️⬆️ ---
 
         StartCoroutine(ThinkAndAct());
     }
 
-    // --- ⬇️⬇️⬇️ KirbyAI의 UI 기능을 여기에 추가 ⬇️⬇️⬇️ ---
+    // --- ⬇️⬇️⬇️ UI 기능을 여기에 추가 ⬇️⬇️⬇️ ---
     void Update()
     {
         // AI가 메뉴 때문에 멈췄는데, 메뉴가 (허공 클릭 등으로) 꺼졌다면
         // (contextMenuPanel이 null이 아닌지 확인하는 방어 코드 추가)
         if (isPausedByMenu && contextMenuPanel != null && !contextMenuPanel.activeSelf && !bMouseDrag)
         {
+            // (추가) 그리드 패널도 혹시 모르니 껐는지 확인
+            if (characterGridPanel != null && characterGridPanel.activeSelf)
+            {
+                // 그리드 패널이 켜져있다면 AI는 계속 멈춰있어야 함
+                return;
+            }
+
             isPausedByMenu = false; // AI를 다시 시작시킬 거니까, 상태를 리셋
             StartCoroutine(ThinkAndAct()); // AI(생각) 다시 시작!
         }
@@ -145,6 +167,18 @@ public class ShihoAI : MonoBehaviour
         StopAllCoroutines();
 
         bMouseDrag = true; // (KirbyAI 기능)
+
+        // --- ⬇️⬇️⬇️ 여기가 수정된 부분입니다! ⬇️⬇️⬇️ ---
+        // 3. 드래그가 시작되면 캐릭터 선택 관련 UI들을 강제로 숨깁니다.
+        if (characterGridPanel != null)
+        {
+            characterGridPanel.SetActive(false);
+        }
+        if (gridBackgroundCatcher != null)
+        {
+            gridBackgroundCatcher.SetActive(false);
+        }
+        // --- ⬆️⬆️⬆️ 수정 끝 ⬆️⬆️⬆️ ---
     }
 
     // 2. 마우스를 '클릭한 채로 움직이는' 동안 매 프레임 호출됨
@@ -159,7 +193,9 @@ public class ShihoAI : MonoBehaviour
     {
         anim.SetBool("isDragging", false);
 
-        isPausedByMenu = false; // (KirbyAI 기능)
+        // (수정) isPausedByMenu는 메뉴가 닫힐 때만 false가 되어야 하므로
+        // bMouseDrag만 false로 변경합니다.
+        // isPausedByMenu = false; // 👈 이 줄은 삭제하거나 주석 처리
 
         StartCoroutine(ThinkAndAct());
 
@@ -169,7 +205,10 @@ public class ShihoAI : MonoBehaviour
     // 4. (KirbyAI 기능) 마우스 우클릭 / 좌클릭 처리
     void OnMouseOver()
     {
-        if (Input.GetMouseButtonDown(1) && !bMouseDrag)
+        // (수정) 그리드 패널이 켜져있을 때는 우클릭 메뉴가 뜨지 않도록 조건 추가
+        bool isGridPanelActive = (characterGridPanel != null && characterGridPanel.activeSelf);
+
+        if (Input.GetMouseButtonDown(1) && !bMouseDrag && !isGridPanelActive) // 👈 조건 추가
         {
             StopAllCoroutines();
             isPausedByMenu = true; // AI를 메뉴 때문에 멈췄다고 기록
