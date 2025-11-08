@@ -2475,6 +2475,7 @@ GameObject:
   - component: {fileID: 1501234248}
   - component: {fileID: 1501234249}
   - component: {fileID: 1501234247}
+  - component: {fileID: 1501234251}
   m_Layer: 0
   m_Name: UIMANAGER
   m_TagString: Untagged
@@ -2499,13 +2500,12 @@ MonoBehaviour:
   inputFieldAnimator: {fileID: 1501234248}
   backgroundClickCatcher: {fileID: 589734435}
   backendBaseUrl: http://localhost:8080/gemini/simple
-  currentSessionId: unityUser001
+  currentSessionId: roy17-desktop
   currentPersonaDomain: tsundere
   kirbyCharacter: {fileID: 1793924478}
   kirbyPersonaName: kirby
   shihoCharacter: {fileID: 1606955871}
   shihoPersonaName: tsundere
-  alarmManager: {fileID: 1501234247}
 --- !u!114 &1501234247
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2574,6 +2574,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1501234251
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1501234245}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 61a1ef4dcfd9f7b43943a05c6647757a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RecommendationPoller
+  pollingInterval: 5
+  backendUrl: http://localhost:8080/api/recommendation
+  computerId: roy17-desktop
 --- !u!1 &1606955871
 GameObject:
   m_ObjectHideFlags: 0
