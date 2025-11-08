@@ -80,6 +80,8 @@ public class ShihoAI : MonoBehaviour
         }
         // --- ⬆️⬆️⬆️ ---
 
+        isPausedByMenu = false;
+
         StartCoroutine(ThinkAndAct());
     }
 

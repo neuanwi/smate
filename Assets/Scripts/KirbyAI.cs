@@ -61,6 +61,9 @@ public class KirbyAI : MonoBehaviour
         maxY = maxScreenPos.y - spriteHalfHeight;
         // ------------------------------------------
 
+    }
+    void OnEnable()
+    {
         //시작할 때 UI 패널을 숨김
         if (contextMenuPanel != null)
         {
@@ -77,16 +80,20 @@ public class KirbyAI : MonoBehaviour
             gridBackgroundCatcher.SetActive(false);
         }
 
+        // AI 상태를 확실하게 초기화
+        isPausedByMenu = false;
 
+        // AI 시작
+        StopAllCoroutines();
         StartCoroutine(ThinkAndAct());
     }
 
     void Update()
     {
         // AI가 메뉴 때문에 멈췄는데, 메뉴가 (허공 클릭 등으로) 꺼졌다면
-        if (isPausedByMenu && !contextMenuPanel.activeSelf && !bMouseDrag)
+        if (isPausedByMenu && contextMenuPanel != null && !contextMenuPanel.activeSelf && !bMouseDrag)
         {
-            // (추가) 그리드 패널도 혹시 모르니 껐는지 확인
+            // (추가) 그리드 패널도 껐는지 확인
             if (characterGridPanel != null && characterGridPanel.activeSelf)
             {
                 // 그리드 패널이 켜져있다면 AI는 계속 멈춰있어야 함
@@ -94,6 +101,8 @@ public class KirbyAI : MonoBehaviour
             }
 
             isPausedByMenu = false; // AI를 다시 시작시킬 거니까, 상태를 리셋
+
+            StopAllCoroutines(); //  [1] AI가 중복 실행되지 않도록 먼저 모두 중지
             StartCoroutine(ThinkAndAct()); // AI(생각) 다시 시작!
         }
     }
@@ -153,7 +162,7 @@ public class KirbyAI : MonoBehaviour
         }
     }
 
-    // --- ⬇️⬇️⬇️ 새로 추가된 드래그 기능 함수 3개 ⬇️⬇️⬇️ ---
+    
 
     // 1. 커비의 Collider에 마우스 클릭이 '시작'될 때 1번 호출됨
     void OnMouseDown()
@@ -200,7 +209,10 @@ public class KirbyAI : MonoBehaviour
         // 1. 'isDragging' 스위치를 끈다 (Idle 애니메이션으로 돌아감)
         anim.SetBool("isDragging", false);
 
+        isPausedByMenu = false;
+
         // 2. 멈췄던 AI의 '생각'을 다시 시작시킨다!
+        StopAllCoroutines();
         StartCoroutine(ThinkAndAct());
 
         bMouseDrag = false;
