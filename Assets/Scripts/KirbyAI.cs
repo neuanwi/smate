@@ -38,7 +38,8 @@ public class KirbyAI : MonoBehaviour
     // --- ⬇️⬇️⬇️ 여기에 두 줄을 추가하세요! ⬇️⬇️⬇️ ---
     public GameObject characterGridPanel;       // 캐릭터 선택 그리드 UI
     public GameObject gridBackgroundCatcher;    // 그리드 배경 클릭 캐처
-    // --- ⬆️⬆️⬆️ 추가 끝 ⬆️⬆️⬆️ ---
+
+    public GameObject clickCatcher; // '허공' 클릭을 감지하는 메인 캐처
 
     // UI 오프셋 변수 추가
     public Vector3 uiOffset = new Vector3(0f, 50f, 0f);
@@ -226,13 +227,15 @@ public class KirbyAI : MonoBehaviour
 
         bMouseDrag = false;
     }
-
+    // KirbyAI.cs 와 ShihoAI.cs 둘 다 수정
     void OnMouseOver()
     {
-        // (수정) 그리드 패널이 켜져있을 때는 우클릭 메뉴가 뜨지 않도록 조건 추가
+        // --- ⬇️⬇️⬇️ 바로 이 줄을 추가해야 합니다! ⬇️⬇️⬇️ ---
+        // (수정) 그리드 패널이 켜져있는지 확인하는 변수
         bool isGridPanelActive = (characterGridPanel != null && characterGridPanel.activeSelf);
+        // --- ⬆️⬆️⬆️ ---
 
-        if (Input.GetMouseButtonDown(1) && !bMouseDrag && !isGridPanelActive) // 👈 조건 추가
+        if (Input.GetMouseButtonDown(1) && !bMouseDrag && !isGridPanelActive) // 👈 이제 이 변수를 알 수 있음
         {
             StopAllCoroutines();
 
@@ -242,6 +245,12 @@ public class KirbyAI : MonoBehaviour
             {
                 contextMenuPanel.SetActive(true);
                 contextMenuPanel.transform.position = gameObject.transform.position;
+            }
+
+            // (추가한 버그 수정 코드)
+            if (clickCatcher != null)
+            {
+                clickCatcher.SetActive(true);
             }
         }
         else if (Input.GetMouseButtonDown(0))
