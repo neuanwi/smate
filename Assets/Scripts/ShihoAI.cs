@@ -45,7 +45,8 @@ public class ShihoAI : MonoBehaviour
 
     // --- ⬆️⬆️⬆️ ---
 
-    void Start()
+    // 👈 [1] Start()를 Awake()로 변경합니다. (변수 초기화)
+    void Awake()
     {
         anim = GetComponent<Animator>();
         spriteRenderer = GetComponent<SpriteRenderer>();
@@ -61,8 +62,12 @@ public class ShihoAI : MonoBehaviour
         minY = minScreenPos.y + spriteHalfHeight;
         maxY = maxScreenPos.y - spriteHalfHeight;
         // ------------------------------------------
+    }
 
-        // --- ⬇️⬇️⬇️ UI 기능을 여기에 추가 ⬇️⬇️⬇️ ---
+    // 👈 [2] OnEnable() 메서드를 추가합니다. (UI 숨김 및 AI 시작)
+    // 이 메서드는 캐릭터가 활성화될 때마다 (캐릭터 변경 시) 호출됩니다.
+    void OnEnable()
+    {
         //시작할 때 UI 패널을 숨김
         if (contextMenuPanel != null)
         {
@@ -82,7 +87,15 @@ public class ShihoAI : MonoBehaviour
 
         isPausedByMenu = false;
 
+        // AI가 중복 실행되지 않도록 확실하게 초기화
+        StopAllCoroutines();
         StartCoroutine(ThinkAndAct());
+    }
+
+    // 👈 [3] Start()는 비워둡니다 (혹은 삭제)
+    void Start()
+    {
+        // 모든 초기화 로직은 Awake()와 OnEnable()로 이동했습니다.
     }
 
     // --- ⬇️⬇️⬇️ UI 기능을 여기에 추가 ⬇️⬇️⬇️ ---
@@ -100,6 +113,9 @@ public class ShihoAI : MonoBehaviour
             }
 
             isPausedByMenu = false; // AI를 다시 시작시킬 거니까, 상태를 리셋
+
+            // 👈 [4] AI 중복 실행을 막기 위해 StopAllCoroutines() 추가
+            StopAllCoroutines();
             StartCoroutine(ThinkAndAct()); // AI(생각) 다시 시작!
         }
     }
@@ -195,10 +211,11 @@ public class ShihoAI : MonoBehaviour
     {
         anim.SetBool("isDragging", false);
 
-        // (수정) isPausedByMenu는 메뉴가 닫힐 때만 false가 되어야 하므로
-        // bMouseDrag만 false로 변경합니다.
-        // isPausedByMenu = false; // 👈 이 줄은 삭제하거나 주석 처리
+        // 👈 [5] 드래그가 끝나면 AI의 메뉴 멈춤 상태도 해제합니다.
+        isPausedByMenu = false;
 
+        // AI 다시 시작
+        StopAllCoroutines(); // 중복 방지
         StartCoroutine(ThinkAndAct());
 
         bMouseDrag = false; // (KirbyAI 기능)

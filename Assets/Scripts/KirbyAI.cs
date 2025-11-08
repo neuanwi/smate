@@ -44,7 +44,7 @@ public class KirbyAI : MonoBehaviour
     public Vector3 uiOffset = new Vector3(0f, 50f, 0f);
     private bool isPausedByMenu = false; // 메뉴 때문에 AI가 멈췄는지 기억
 
-    void Start()
+    void Awake() // 👈 Start()를 Awake()로 변경!
     {
         anim = GetComponent<Animator>();
         spriteRenderer = GetComponent<SpriteRenderer>();
@@ -64,6 +64,9 @@ public class KirbyAI : MonoBehaviour
     }
     void OnEnable()
     {
+        // (이제 이 메서드가 호출되는 시점에는
+        //  Awake()가 이미 실행되어 anim이 할당된 상태입니다)
+
         //시작할 때 UI 패널을 숨김
         if (contextMenuPanel != null)
         {
@@ -85,7 +88,13 @@ public class KirbyAI : MonoBehaviour
 
         // AI 시작
         StopAllCoroutines();
-        StartCoroutine(ThinkAndAct());
+        StartCoroutine(ThinkAndAct()); // <-- 이제 이 코드를 실행해도 안전합니다.
+    }
+
+    void Start()
+    {
+        // Start()는 비워두거나,
+        // 나중에 다른 초기화 로직이 필요하면 여기에 작성합니다.
     }
 
     void Update()
