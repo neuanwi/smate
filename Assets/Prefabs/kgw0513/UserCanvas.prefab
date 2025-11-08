@@ -1343,7 +1343,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 0}
-  m_AnchoredPosition: {x: 0, y: 279.47156}
+  m_AnchoredPosition: {x: 0, y: 279.47162}
   m_SizeDelta: {x: -212.93842, y: 0}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &7743874479126671690
@@ -1882,6 +1882,8 @@ MonoBehaviour:
   CalendarListPanel: {fileID: 4713026476341404552}
   PopupMessage: {fileID: 9164727513610925560, guid: 5bb7832ce08dfb5478a615b0b6b7d290,
     type: 3}
+  MessageInputField: {fileID: 2063627429880503522}
+  TimeInputField: {fileID: 5918161362461515461}
 --- !u!1 &5885228534056210038
 GameObject:
   m_ObjectHideFlags: 0
@@ -2354,7 +2356,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1937566305954657149}
   m_HandleRect: {fileID: 1983712557567075838}
   m_Direction: 2
-  m_Value: 1
+  m_Value: 0
   m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
