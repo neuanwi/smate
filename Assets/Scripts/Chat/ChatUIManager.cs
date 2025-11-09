@@ -150,12 +150,26 @@ public class ChatManager : MonoBehaviour
             SetTextAndScroll(chatLogText, chatLogScrollRect, "(응답 없음)");
         }
 
-        if (dto != null && dto.task != null && !string.IsNullOrEmpty(dto.task.time))
+        // ✅ 여기만 수정됨
+        if (dto != null && dto.task != null)
         {
-            Debug.Log($"[SERVER ALARM] 시간: {dto.task.time} / 내용: {dto.task.text}");
-            AlarmManager.Instance?.SaveAlarm(dto.task.time, dto.task.text);
-        }
+            // 양쪽 다 체크
+            string taskTime = dto.task.time;
+            string taskText = dto.task.text;
 
+            bool hasTime = !string.IsNullOrWhiteSpace(taskTime);
+            bool hasText = !string.IsNullOrWhiteSpace(taskText);
+
+            if (hasTime && hasText)
+            {
+                Debug.Log($"[SERVER ALARM] 시간: {taskTime} / 내용: {taskText}");
+                AlarmManager.Instance?.SaveAlarm(taskTime, taskText);
+            }
+            else
+            {
+                Debug.Log("[ChatManager] task가 왔지만 time 또는 text가 비어 있어서 저장 안 함.");
+            }
+        }
     }
 
     // ================= 헬퍼 함수 =================
