@@ -16,6 +16,11 @@ public class PopupController : MonoBehaviour
     // 3. ⭐️ 현재 실행 중인 타이핑 애니메이션을 제어하기 위한 변수
     private Coroutine _typingCoroutine;
 
+
+
+
+
+
     /// <summary>
     /// 관제탑(ChatManager)에서 호출할 함수입니다.
     /// 이제 텍스트를 '즉시' 설정하지 않고, '타이핑 애니메이션'을 시작시킵니다.

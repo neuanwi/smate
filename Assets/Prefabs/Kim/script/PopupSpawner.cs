@@ -40,6 +40,13 @@ public class PopupSpawner : MonoBehaviour
     public Vector2 positionOffset;
 
 
+    [Header("감정 스티커")]
+    public GameObject emotionStickerPrefab;    // 네가 올린 사진 프리팹 (Image 포함)
+    public Vector2 stickerOffset = new Vector2(80f, 80f); // 말풍선에서 살짝 떨어진 위치
+    private RectTransform _lastSticker;
+
+
+
 
     // --- 내부 변수 ---
 
@@ -52,6 +59,8 @@ public class PopupSpawner : MonoBehaviour
     // 7. LateUpdate에서 위치를 갱신해야 하는지 여부 (피벗 변경 시 필수)
 
     private bool _needsPositionUpdate = false;
+    private Vector2 _lastLocalPoint;
+    private Vector2 _lastPivot;
 
 
 
@@ -180,19 +189,29 @@ public class PopupSpawner : MonoBehaviour
              out localPoint
         );
 
-        // 3-4. 피벗에 따른 오프셋 방향 조정
+        // ⭐️ [수정된 로직]
+        // X축: 피벗이 0(좌)이면 +x (오른쪽으로), 1(우)이면 -x (왼쪽으로)
         float offsetX = (newPivot.x == 0) ? positionOffset.x : -positionOffset.x;
+
+        // Y축: 피벗이 0(하)이면 +y (위쪽으로), 1(상)이면 -y (아래쪽으로)
         float offsetY = (newPivot.y == 0) ? positionOffset.y : -positionOffset.y;
+        // 👆 [수정] --------------------------------
 
         // --- 6. 팝업에 적용 및 갱신 예약 ---
         popupRect.pivot = newPivot;
         popupRect.anchoredPosition = localPoint + new Vector2(offsetX, offsetY);
+
+        // 👇 [추가] --------------------------------
+        // ⭐️ 스티커가 참조할 수 있도록 마지막 위치와 피벗을 저장합니다.
+        _lastLocalPoint = localPoint;
+        _lastPivot = newPivot;
+        // 👆 [추가] --------------------------------
+
         _needsPositionUpdate = true;
 
         // 7. ⭐️ ChatInputManager에게 "리모컨"을 반환합니다!
         return _currentPopupInstance;
     }
-
 
 
     /// <summary>
@@ -236,5 +255,83 @@ public class PopupSpawner : MonoBehaviour
         }
 
     }
+
+
+    // 👇 [새로 추가] --------------------------------
+
+    /// <summary>
+    /// (ChatInputManager가 호출)
+    /// 감정 스티커를 팝업의 반대편에 표시합니다.
+    /// </summary>
+    /// <param name="popupRect">위치 기준이 될 팝업 말풍선</param>
+    /// <param name="emotion">"기쁨", "슬픔" 등 (스프라이트 교체용-지금은 안씀)</param>
+    public void ShowEmotionSticker(RectTransform popupRect, string emotion)
+    {
+        if (emotionStickerPrefab == null)
+        {
+            Debug.LogWarning("[PopupSpawner] 스티커 프리팹이 없습니다.");
+            return;
+        }
+
+        // 1. 스티커 인스턴스 확보 (없으면 생성)
+        if (_lastSticker == null)
+        {
+            GameObject stickerObj = Instantiate(emotionStickerPrefab, parentCanvas.transform);
+            _lastSticker = stickerObj.GetComponent<RectTransform>();
+
+            if (_lastSticker == null)
+            {
+                Debug.LogError("[PopupSpawner] 스티커 프리팹에 RectTransform이 없습니다.");
+                Destroy(stickerObj);
+                return;
+            }
+        }
+
+        _lastSticker.gameObject.SetActive(true);
+
+        // (선택적) 2. emotion 값에 따라 _lastSticker의 Image.sprite 교체
+        Debug.Log($"[PopupSpawner] 감정 스티커 표시: {emotion}");
+
+        // 3. ⭐️ 위치 계산: 캐릭터(_lastLocalPoint) 기준, 팝업과 반대편
+
+        // 3-1. ⭐️ 스티커의 피벗을 (0.5, 0.5) 중앙으로 강제 고정합니다.
+        // (프리팹 설정이 어떻든, 계산을 편하게 하기 위해)
+        _lastSticker.pivot = new Vector2(0.5f, 0.5f);
+
+        // 3-2. 스티커가 위치할 X축 피벗 결정 (팝업과 반대)
+        // 팝업 피벗이 1(우)이면 스티커 피벗은 0(좌)
+        // 팝업 피벗이 0(좌)이면 스티커 피벗은 1(우)
+        float stickerPivotX = 1f - _lastPivot.x;
+
+        // 3-3. 스티커가 위치할 Y축 피벗 결정 (팝업과 동일)
+        // (요청사항: "오른쪽 '위'면 왼쪽 '위'에")
+        float stickerPivotY = _lastPivot.y;
+
+        // 3-4. ⭐️ 스티커 오프셋 계산
+        // 위에서 결정된 스티커의 '피벗' 위치에 따라 멀어지는 방향으로 오프셋 계산
+        // (ShowPopupNearTarget의 오프셋 로직과 동일)
+        float stickerOffsetX = (stickerPivotX == 0) ? stickerOffset.x : -stickerOffset.x;
+        float stickerOffsetY = (stickerPivotY == 0) ? stickerOffset.y : -stickerOffset.y;
+
+        // 4. 스티커 위치 설정
+        // ⭐️ 캐릭터 위치(_lastLocalPoint)를 기준으로, 스티커 오프셋을 적용
+        _lastSticker.anchoredPosition = _lastLocalPoint + new Vector2(stickerOffsetX, stickerOffsetY);
+
+        // 5. ⭐️ 스티커가 팝업보다 앞에 나오도록
+        _lastSticker.SetAsLastSibling();
+    }
+
+    /// <summary>
+    /// (ChatInputManager가 호출)
+    /// 현재 표시된 감정 스티커를 숨깁니다. (OpenChatFlow나 새 질문 시)
+    /// </summary>
+    public void HideEmotionSticker()
+    {
+        if (_lastSticker != null)
+        {
+            _lastSticker.gameObject.SetActive(false);
+        }
+    }
+    // 👆 [새로 추가] --------------------------------
 
 }

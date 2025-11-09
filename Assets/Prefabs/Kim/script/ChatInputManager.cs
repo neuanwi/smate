@@ -175,13 +175,44 @@ public class ChatInputManager : MonoBehaviour
                 finalText = string.IsNullOrWhiteSpace(onlyText) ? raw : onlyText;
             }
 
+            (string cleanedText, string detectedEmotion) = CleanAndDetectEmotion(finalText);
+            finalText = cleanedText; // 실제 팝업에 표시될 텍스트 (모두 제거된)
+
+                                     //
+                                     // 2. 팝업에 최종 텍스트 표시
+            if (_activePopup != null) 
+            {
+                _activePopup.SetText(finalText);
+                Debug.Log("감정 찾았다");
+            }
+                
+            // 3. 감정이 감지되었고, 1/3 확률 당첨 시 스티커 표시
+
+            if (!string.IsNullOrEmpty(detectedEmotion) &&
+                UnityEngine.Random.value < (3f / 3f)) // 👈 1/3 확률 (0.333...)
+            {
+                if (popupSpawner != null && _activePopup != null)
+                {
+                    // ⭐️ PopupSpawner에게 "이 감정 스티커를, 팝업 반대편에 띄워줘!" 라고 요청
+                    // (이 함수는 PopupSpawner.cs에 새로 만들어야 합니다)
+                    popupSpawner.ShowEmotionSticker(
+                        _activePopup.transform as RectTransform,
+                        detectedEmotion
+                    );
+                }
+            }
         }
 
-        if (_activePopup != null)
-            _activePopup.SetText(finalText);
 
+        // 4. 마지막 대화로 저장
         _lastConversationText = finalText;
         _lastActivePersonaDomain = activePersona;
+
+        //if (_activePopup != null)
+        //    _activePopup.SetText(finalText);
+
+        //_lastConversationText = finalText;
+        //_lastActivePersonaDomain = activePersona;
     }
 
     // 배경 클릭해서 닫기
@@ -244,6 +275,35 @@ public class ChatInputManager : MonoBehaviour
         {
             return null;
         }
+    }
+
+    /// <summary>
+    /// 텍스트를 정리하고 감정 태그를 감지합니다.
+    /// (숫자자) 꼬리표를 제거하고, (감정) 태그도 감지 후 제거합니다.
+    /// </summary>
+    /// <param name="src">원본 텍스트</param>
+    /// <returns>(정리된 텍스트, 감지된 감정(없으면 null))</returns>
+    private (string cleaned, string emotion) CleanAndDetectEmotion(string src)
+    {
+        if (string.IsNullOrWhiteSpace(src)) return (src, null);
+
+        // ① 문장 끝의 "(숫자자)" 꼬리표 제거 (예: "(200자)", "(117자)")
+        string temp = Regex.Replace(src, @"\s*\(\d+자\)\s*$", "");
+
+        // ② 문장 끝의 감정 태그 감지: (기쁨|슬픔|보통|화남)
+        var m = Regex.Match(temp, @"\((기쁨|슬픔|보통|화남)\)\s*$");
+        string emotion = null;
+        string cleaned = temp; // 기본값은 (숫자자)만 제거된 텍스트
+
+        if (m.Success)
+        {
+            // ⭐️ 감정이 감지되면
+            emotion = m.Groups[1].Value;
+            // ⭐️ 텍스트에서도 (감정) 태그 부분을 제거합니다.
+            cleaned = temp.Substring(0, m.Index).TrimEnd();
+        }
+
+        return (cleaned, emotion);
     }
 
     // =====================

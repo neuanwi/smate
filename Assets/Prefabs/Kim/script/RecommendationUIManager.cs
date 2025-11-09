@@ -1,6 +1,9 @@
 using UnityEngine;
 using UnityEngine.UI; // LayoutRebuilder
 using System; // Action
+using System.Collections; // 👈 [추가] IEnumerator를 위해 추가
+using UnityEngine.Networking; // 👈 [추가] UnityWebRequest를 위해 추가
+using System.Text; // 👈 [추가] JSON 인코딩을 위해 추가
 
 /// <summary>
 /// RecommendationPoller의 이벤트를 구독하여,
@@ -9,6 +12,7 @@ using System; // Action
 /// </summary>
 public class RecommendationUIManager : MonoBehaviour
 {
+    // ... (필드 변수들은 모두 그대로) ...
     [Header("핵심 연결")]
     [Tooltip("말풍선을 띄워줄 PopupSpawner")]
     [SerializeField]
@@ -44,8 +48,7 @@ public class RecommendationUIManager : MonoBehaviour
     private PopupController _currentBubble;
     private RecommendationButtonPopup _currentCheckButton;
 
-    // --- 이벤트 구독 ---
-
+    // ... (OnEnable, OnDisable은 그대로) ...
     private void OnEnable()
     {
         RecommendationPoller.OnWittyCommentReceived += HandleWittyComment;
@@ -58,8 +61,7 @@ public class RecommendationUIManager : MonoBehaviour
         RecommendationPoller.OnAppRecommendationReceived -= HandleAppRecommendation;
     }
 
-    // --- 핸들러 1: 재치 있는 멘트 (말풍선만) ---
-
+    // ... (HandleWittyComment는 그대로) ...
     private void HandleWittyComment(string message)
     {
         CloseAllPopups();
@@ -67,13 +69,11 @@ public class RecommendationUIManager : MonoBehaviour
 
         if (_currentBubble != null)
         {
-            // 👇 [수정됨] SetupMessage(message) 대신 SetText(message) 호출
             _currentBubble.SetText(message);
         }
     }
 
-    // --- 핸들러 2: 앱 추천 (말풍선 + 체크 버튼) ---
-
+    // ... (HandleAppRecommendation는 그대로) ...
     private void HandleAppRecommendation(string message, string appPath)
     {
         CloseAllPopups();
@@ -86,7 +86,6 @@ public class RecommendationUIManager : MonoBehaviour
             return;
         }
 
-        // 👇 [수정됨] SetupMessage(message) 대신 SetText(message) 호출
         _currentBubble.SetText(message);
 
         // --- 2. 체크 버튼 띄우기 (직접 스폰) ---
@@ -144,14 +143,69 @@ public class RecommendationUIManager : MonoBehaviour
     }
 
     // --- 팝업 제어 로직 ---
-    // (이하 로직은 동일합니다)
 
+    // 👇 [수정됨] --------------------------------
     private void OnAcceptRecommendation(string path)
     {
-        Debug.Log($"[RecUIManager] ⭐ 앱 실행! 경로: {path}");
+        Debug.Log($"[RecUIManager] ⭐ 앱 실행 요청! 경로: {path}");
+
         // (선택) 여기에 실제 앱을 실행하는 로직 추가
+        // ⭐️ 파이썬 서버에 '실행' POST 요청을 보내는 코루틴을 시작합니다.
+        StartCoroutine(SendExecuteCommand(path));
+
         CloseAllPopups();
     }
+    // 👆 [수정됨] --------------------------------
+
+    // 👇 [신규 추가] --------------------------------
+    /// <summary>
+    /// 파이썬 Flask 서버의 /execute 엔드포인트로 앱 실행 명령을 보냅니다.
+    /// </summary>
+    /// <param name="appPath">"Photoshop.exe" 등 실행할 앱 경로/이름</param>
+    private IEnumerator SendExecuteCommand(string appPath)
+    {
+        // 1. 파이썬 서버 주소
+        string url = "http://localhost:5001/execute";
+
+        // 2. 파이썬이 받을 JSON 형식: { "command": "Photoshop.exe" }
+        // (JSON 특수문자를 이스케이프 처리합니다)
+        // 👇 [수정됨] --------------------------------
+        // ⭐️ JSON 표준을 위해 백슬래시(\)도 \\로, 큰따옴표(")는 \"로 이스케이프합니다.
+        string escapedAppPath = appPath.Replace("\\", "\\\\").Replace("\"", "\\\"");
+        string jsonBody = $"{{\"command\": \"{escapedAppPath}\"}}";
+        // 👆 [수정됨] --------------------------------
+
+        // 3. UnityWebRequest 생성
+        using (UnityWebRequest www = new UnityWebRequest(url, "POST"))
+        {
+            // 4. JSON 바디를 UTF-8 바이트로 변환하여 업로드 핸들러에 설정
+            byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonBody);
+            www.uploadHandler = (UploadHandler)new UploadHandlerRaw(bodyRaw);
+            www.downloadHandler = (DownloadHandler)new DownloadHandlerBuffer();
+
+            // 5. ⭐️ Content-Type 헤더를 'application/json'으로 설정 (필수!)
+            www.SetRequestHeader("Content-Type", "application/json");
+
+            // 6. 요청 전송 및 대기
+            Debug.Log($"[RecUIManager] 파이썬 서버({url}) 호출 시도: {jsonBody}");
+            yield return www.SendWebRequest();
+
+            // 7. 결과 로깅
+            if (www.result == UnityWebRequest.Result.ConnectionError ||
+                www.result == UnityWebRequest.Result.ProtocolError)
+            {
+                Debug.LogError($"[RecUIManager] 파이썬 서버 호출 실패: {www.error}");
+                Debug.LogError($"[RecUIManager] 실패 본문: {www.downloadHandler.text}");
+            }
+            else
+            {
+                // 파이썬 서버가 보낸 "실행을 시작했습니다." 메시지
+                Debug.Log($"[RecUIManager] 파이썬 서버 응답: {www.downloadHandler.text}");
+            }
+        }
+    }
+    // 👆 [신규 추가] --------------------------------
+
 
     private void OnDeclineRecommendation()
     {
@@ -163,7 +217,6 @@ public class RecommendationUIManager : MonoBehaviour
     {
         if (_currentBubble != null)
         {
-            // SetActive(false) 대신 스크립트에 있는 ClosePopup() 호출
             _currentBubble.ClosePopup();
             _currentBubble = null;
         }
