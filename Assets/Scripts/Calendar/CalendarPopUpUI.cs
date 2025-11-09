@@ -1,5 +1,4 @@
 using System;
-using System.Globalization;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -7,22 +6,20 @@ public class CalendarPopUpUI : MonoBehaviour
 {
     public InputField TodoInputField;
     public InputField TimeInputField;
-
-    private const string timeFormat = "yyyy-MM-dd HH:mm:ss";
-
     public Button DeleteButton;
+
+    // 이 UI가 표시하고 있는 실제 알람 데이터
+    public AlarmManager.AlarmData boundAlarm;
 
     public event Action<CalendarPopUpUI> OnDeleteRequested;
 
     void Start()
     {
         if (DeleteButton != null)
-        {
             DeleteButton.onClick.AddListener(HandleDeleteClick);
-        }
 
-        if (TimeInputField.text == "")
-            TimeInputField.text = DateTime.Now.ToString();
+        if (string.IsNullOrEmpty(TimeInputField.text))
+            TimeInputField.text = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
     }
 
     private void HandleDeleteClick()
@@ -30,33 +27,30 @@ public class CalendarPopUpUI : MonoBehaviour
         OnDeleteRequested?.Invoke(this);
     }
 
+    // AlarmData로부터 세팅
+    public void SetUpPopUI(AlarmManager.AlarmData data)
+    {
+        boundAlarm = data;
+        SetText(data.text);
+        SetTime(data.time);
+    }
+
+    // 채팅에서 바로 text, time만 넘어오는 경우용
     public void SetUpPopUI(string message, string time)
     {
         SetText(message);
         SetTime(time);
     }
+
     private void SetText(string message)
     {
         if (TodoInputField != null)
-        {
             TodoInputField.text = message;
-        }
-        else
-        {
-            Debug.LogError("CalendarPopUpUI에 TodoInputField 컴포넌트가 연결되지 않았습니다!");
-        }
     }
 
     private void SetTime(string newTimeString)
     {
-        TimeInputField.text = newTimeString;
-
-        if (TimeInputField.text == "")
-            TimeInputField.text = DateTime.Now.ToString();
+        if (TimeInputField != null)
+            TimeInputField.text = newTimeString;
     }
-    private string FormatFullText(DateTime time, string message)
-    {
-        return $"[{time.ToString(timeFormat)}] {message}";
-    }
-
 }
