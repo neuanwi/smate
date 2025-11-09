@@ -2852,14 +2852,6 @@ MonoBehaviour:
     type: 3}
   rightHighBubblePrefab: {fileID: 6678785936304023757, guid: 3a255ae04d7e12a4592618a9480d5e39,
     type: 3}
-  leftLowButtonPrefab: {fileID: 3640167502400129410, guid: 5a4956c8badfb274ca9784ad9073a3ad,
-    type: 3}
-  leftHighButtonPrefab: {fileID: 3640167502400129410, guid: 5a4956c8badfb274ca9784ad9073a3ad,
-    type: 3}
-  rightLowButtonPrefab: {fileID: 3640167502400129410, guid: 5a4956c8badfb274ca9784ad9073a3ad,
-    type: 3}
-  rightHighButtonPrefab: {fileID: 3640167502400129410, guid: 5a4956c8badfb274ca9784ad9073a3ad,
-    type: 3}
   parentCanvas: {fileID: 1768168342}
   kirbyCharacter: {fileID: 1793924478}
   shihoCharacter: {fileID: 1606955871}
@@ -2907,8 +2899,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6fed0bc5ff5c0cb4a840c368692cffeb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RecommendationUIManager
-  popupSpawner: {fileID: 1501234249}
-  pythonExecuteUrl: http://localhost:5001/execute
+  bubbleSpawner: {fileID: 1501234249}
+  checkButtonPrefab: {fileID: 3640167502400129410, guid: 5a4956c8badfb274ca9784ad9073a3ad,
+    type: 3}
+  parentCanvas: {fileID: 1768168342}
+  mainCamera: {fileID: 1229787097}
+  kirbyCharacter: {fileID: 1793924478}
+  shihoCharacter: {fileID: 1606955871}
+  checkButtonOffset: {x: 90, y: 20}
 --- !u!1 &1547166928
 GameObject:
   m_ObjectHideFlags: 0

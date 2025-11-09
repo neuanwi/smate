@@ -3,69 +3,69 @@ using UnityEngine;
 
 public class UIAnimator : MonoBehaviour
 {
-    [Header("ÇÊ¼ö ¼³Á¤")]
-    // 1. ¿òÁ÷ÀÏ ´ë»ó (ÀÎÇ² ÇÊµå)ÀÇ RectTransform
+    [Header("ï¿½Ê¼ï¿½ ï¿½ï¿½ï¿½ï¿½")]
+    // 1. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ (ï¿½ï¿½Ç² ï¿½Êµï¿½)ï¿½ï¿½ RectTransform
     public RectTransform targetRect;
 
-    [Header("À§Ä¡ ¼³Á¤")]
-    // 2. 'ºñÆ÷' À§Ä¡ (¼û°ÜÁø À§Ä¡)
+    [Header("ï¿½ï¿½Ä¡ ï¿½ï¿½ï¿½ï¿½")]
+    // 2. 'ï¿½ï¿½ï¿½ï¿½' ï¿½ï¿½Ä¡ (ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡)
     public Vector2 hiddenPosition = new Vector2(0, -100f);
 
-    // 3. '¾ÖÇÁÅÍ' À§Ä¡ (º¸¿©Áú À§Ä¡)
+    // 3. 'ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½' ï¿½ï¿½Ä¡ (ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡)
     public Vector2 shownPosition = new Vector2(0, 100f);
 
-    [Header("¾Ö´Ï¸ÞÀÌ¼Ç ¼³Á¤")]
-    // 4. ¾Ö´Ï¸ÞÀÌ¼Ç ¼Óµµ (ÃÊ)
+    [Header("ï¿½Ö´Ï¸ï¿½ï¿½Ì¼ï¿½ ï¿½ï¿½ï¿½ï¿½")]
+    // 4. ï¿½Ö´Ï¸ï¿½ï¿½Ì¼ï¿½ ï¿½Óµï¿½ (ï¿½ï¿½)
     public float animationDuration = 0.5f;
 
-    // ÇöÀç ½ÇÇà ÁßÀÎ ¾Ö´Ï¸ÞÀÌ¼Ç ÄÚ·çÆ¾À» ÀúÀå
+    // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ö´Ï¸ï¿½ï¿½Ì¼ï¿½ ï¿½Ú·ï¿½Æ¾ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     private Coroutine _animationCoroutine;
 
-    // --- »óÅÂ º¯¼ö ---
-    private bool _isShown = false; // ÇöÀç UI°¡ º¸¿©Áö°í ÀÖ´ÂÁö ¿©ºÎ
+    // --- ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ---
+    private bool _isShown = false; // ï¿½ï¿½ï¿½ï¿½ UIï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ö´ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 
 
     /// <summary>
-    /// ½ºÅ©¸³Æ® ½ÃÀÛ ½Ã, UI¸¦ Áï½Ã ¼û°ÜÁø À§Ä¡·Î ¼³Á¤ÇÕ´Ï´Ù.
+    /// ï¿½ï¿½Å©ï¿½ï¿½Æ® ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½, UIï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Õ´Ï´ï¿½.
     /// </summary>
     void Start()
     {
         if (targetRect == null)
         {
-            Debug.LogError("Target Rect°¡ ¼³Á¤µÇÁö ¾Ê¾Ò½À´Ï´Ù!");
+            Debug.LogError("Target Rectï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ê¾Ò½ï¿½ï¿½Ï´ï¿½!");
             return;
         }
-        // ½ÃÀÛÇÒ ¶§ ¼û°ÜÁø À§Ä¡¿¡ ÀÖµµ·Ï ¼³Á¤
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡ï¿½ï¿½ ï¿½Öµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         targetRect.anchoredPosition = hiddenPosition;
         _isShown = false;
     }
 
     /// <summary>
-    /// ¹öÆ° OnClick()¿¡ ¿¬°áÇÒ ÇÔ¼öÀÔ´Ï´Ù.
-    /// UI¸¦ '¾ÖÇÁÅÍ' À§Ä¡(shownPosition)·Î ºÎµå·´°Ô ÀÌµ¿½ÃÅµ´Ï´Ù.
+    /// ï¿½ï¿½Æ° OnClick()ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ô¼ï¿½ï¿½Ô´Ï´ï¿½.
+    /// UIï¿½ï¿½ 'ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½' ï¿½ï¿½Ä¡(shownPosition)ï¿½ï¿½ ï¿½Îµå·´ï¿½ï¿½ ï¿½Ìµï¿½ï¿½ï¿½Åµï¿½Ï´ï¿½.
     /// </summary>
     public void ShowUI()
     {
-        // ÀÌ¹Ì º¸¿©Áö°í ÀÖ°Å³ª ¾Ö´Ï¸ÞÀÌ¼Ç ÁßÀÌ¸é ½ÇÇàÇÏÁö ¾ÊÀ½
+        // ï¿½Ì¹ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ö°Å³ï¿½ ï¿½Ö´Ï¸ï¿½ï¿½Ì¼ï¿½ ï¿½ï¿½ï¿½Ì¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         if (_isShown) return;
 
-        // ÀÌÀü¿¡ ½ÇÇà ÁßÀÎ ¾Ö´Ï¸ÞÀÌ¼ÇÀÌ ÀÖ´Ù¸é ÁßÁö
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ö´Ï¸ï¿½ï¿½Ì¼ï¿½ï¿½ï¿½ ï¿½Ö´Ù¸ï¿½ ï¿½ï¿½ï¿½ï¿½
         if (_animationCoroutine != null)
         {
             StopCoroutine(_animationCoroutine);
         }
 
-        // 'º¸¿©ÁÖ±â' ¾Ö´Ï¸ÞÀÌ¼Ç ½ÃÀÛ
+        // 'ï¿½ï¿½ï¿½ï¿½ï¿½Ö±ï¿½' ï¿½Ö´Ï¸ï¿½ï¿½Ì¼ï¿½ ï¿½ï¿½ï¿½ï¿½
         _animationCoroutine = StartCoroutine(AnimatePosition(shownPosition));
         _isShown = true;
     }
 
     /// <summary>
-    /// (¼±ÅÃ »çÇ×) UI¸¦ ´Ù½Ã 'ºñÆ÷' À§Ä¡(hiddenPosition)·Î ¼û±é´Ï´Ù.
+    /// (ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½) UIï¿½ï¿½ ï¿½Ù½ï¿½ 'ï¿½ï¿½ï¿½ï¿½' ï¿½ï¿½Ä¡(hiddenPosition)ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ï´ï¿½.
     /// </summary>
     public void HideUI()
     {
-        // ÀÌ¹Ì ¼û°ÜÁ® ÀÖ°Å³ª ¾Ö´Ï¸ÞÀÌ¼Ç ÁßÀÌ¸é ½ÇÇàÇÏÁö ¾ÊÀ½
+        // ï¿½Ì¹ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ö°Å³ï¿½ ï¿½Ö´Ï¸ï¿½ï¿½Ì¼ï¿½ ï¿½ï¿½ï¿½Ì¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         if (!_isShown) return;
 
         if (_animationCoroutine != null)
@@ -73,13 +73,13 @@ public class UIAnimator : MonoBehaviour
             StopCoroutine(_animationCoroutine);
         }
 
-        // '¼û±â±â' ¾Ö´Ï¸ÞÀÌ¼Ç ½ÃÀÛ
+        // 'ï¿½ï¿½ï¿½ï¿½ï¿½' ï¿½Ö´Ï¸ï¿½ï¿½Ì¼ï¿½ ï¿½ï¿½ï¿½ï¿½
         _animationCoroutine = StartCoroutine(AnimatePosition(hiddenPosition));
         _isShown = false;
     }
 
     /// <summary>
-    /// (ÃßÃµ) Show/Hide¸¦ ¹ø°¥¾Æ °¡¸ç ½ÇÇàÇÏ´Â Åä±Û ÇÔ¼ö
+    /// (ï¿½ï¿½Ãµ) Show/Hideï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ ï¿½Ô¼ï¿½
     /// </summary>
     public void ToggleUI()
     {
@@ -95,31 +95,31 @@ public class UIAnimator : MonoBehaviour
 
 
     /// <summary>
-    /// ÁöÁ¤µÈ ¸ñÇ¥ À§Ä¡(targetPos)±îÁö ºÎµå·´°Ô ÀÌµ¿ÇÏ´Â ÄÚ·çÆ¾
+    /// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ç¥ ï¿½ï¿½Ä¡(targetPos)ï¿½ï¿½ï¿½ï¿½ ï¿½Îµå·´ï¿½ï¿½ ï¿½Ìµï¿½ï¿½Ï´ï¿½ ï¿½Ú·ï¿½Æ¾
     /// </summary>
     private IEnumerator AnimatePosition(Vector2 targetPos)
     {
         float timer = 0f;
-        Vector2 startPos = targetRect.anchoredPosition; // ÇöÀç À§Ä¡¿¡¼­ ½ÃÀÛ
+        Vector2 startPos = targetRect.anchoredPosition; // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 
         while (timer < animationDuration)
         {
-            // °æ°ú ½Ã°£À» 0~1 »çÀÌÀÇ °ª(ÁøÇà·ü)À¸·Î º¯È¯
+            // ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½ï¿½ï¿½ 0~1 ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½(ï¿½ï¿½ï¿½ï¿½ï¿½)ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È¯
             float progress = timer / animationDuration;
 
-            // (¼±ÅÃ) ºÎµå·¯¿î ½ÃÀÛ°ú ³¡À» À§ÇÑ Ease-Out È¿°ú
+            // (ï¿½ï¿½ï¿½ï¿½) ï¿½Îµå·¯ï¿½ï¿½ ï¿½ï¿½ï¿½Û°ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Ease-Out È¿ï¿½ï¿½
             progress = 1 - Mathf.Pow(1 - progress, 3); // Ease-Out Cublic
 
-            // Vector2.Lerp¸¦ »ç¿ëÇØ ½ÃÀÛ À§Ä¡¿Í ¸ñÇ¥ À§Ä¡ »çÀÌ¸¦ º¸°£
+            // Vector2.Lerpï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡ï¿½ï¿½ ï¿½ï¿½Ç¥ ï¿½ï¿½Ä¡ ï¿½ï¿½ï¿½Ì¸ï¿½ ï¿½ï¿½ï¿½ï¿½
             targetRect.anchoredPosition = Vector2.Lerp(startPos, targetPos, progress);
 
-            // ½Ã°£ Áõ°¡ ¹× ´ÙÀ½ ÇÁ·¹ÀÓ±îÁö ´ë±â
+            // ï¿½Ã°ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ó±ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
             timer += Time.deltaTime;
-            yield return null; // 1ÇÁ·¹ÀÓ ´ë±â
+            yield return null; // 1ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
         }
 
-        // ¾Ö´Ï¸ÞÀÌ¼ÇÀÌ ³¡³ª¸é Á¤È®ÇÑ ¸ñÇ¥ À§Ä¡·Î ¼³Á¤
+        // ï¿½Ö´Ï¸ï¿½ï¿½Ì¼ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È®ï¿½ï¿½ ï¿½ï¿½Ç¥ ï¿½ï¿½Ä¡ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         targetRect.anchoredPosition = targetPos;
-        _animationCoroutine = null; // ÄÚ·çÆ¾ ¿Ï·á
+        _animationCoroutine = null; // ï¿½Ú·ï¿½Æ¾ ï¿½Ï·ï¿½
     }
 }
