@@ -962,19 +962,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 514845779942836776}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 2104355308197503690}
-        m_TargetAssemblyTypeName: CalendarManager, Assembly-CSharp
-        m_MethodName: UpLoadSchedule
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
 --- !u!1 &3688256503174954334
 GameObject:
   m_ObjectHideFlags: 0
@@ -1894,8 +1882,6 @@ MonoBehaviour:
   CalendarListPanel: {fileID: 4713026476341404552}
   PopupMessage: {fileID: 9164727513610925560, guid: 5bb7832ce08dfb5478a615b0b6b7d290,
     type: 3}
-  MessageInputField: {fileID: 2063627429880503522}
-  TimeInputField: {fileID: 5918161362461515461}
 --- !u!1 &5885228534056210038
 GameObject:
   m_ObjectHideFlags: 0
@@ -2369,7 +2355,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 1983712557567075838}
   m_Direction: 2
   m_Value: 1
-  m_Size: 1
+  m_Size: 0.00000010919743
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
