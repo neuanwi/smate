@@ -51,13 +51,14 @@ public class AlarmManager : MonoBehaviour
 
     public void SaveAlarm(string time, string text)
     {
-        if (string.IsNullOrWhiteSpace(time) || string.IsNullOrWhiteSpace(text))
+        // 1) null, 빈문자, "null" 전부 거르기
+        if (IsEmptyOrNullString(time) || IsEmptyOrNullString(text))
             return;
 
         if (alarmList.items == null)
             alarmList.items = new List<AlarmData>();
 
-        // 같은 거 여러 번 안 넣게
+        // 2) 중복 방지
         bool dup = alarmList.items.Exists(a => a.time == time && a.text == text);
         if (dup) return;
 
@@ -73,9 +74,16 @@ public class AlarmManager : MonoBehaviour
 
         Debug.Log($"[AlarmManager] 저장 완료: {jsonPath}");
 
-        // ✅ UI 들으라고 알림
         OnAlarmAdded?.Invoke(data);
     }
+
+    // "null" 문자열도 빈 걸로 취급
+    private bool IsEmptyOrNullString(string s)
+    {
+        return string.IsNullOrWhiteSpace(s) ||
+               s.Equals("null", StringComparison.OrdinalIgnoreCase);
+    }
+
 
     // 캘린더에서 삭제 눌렀을 때 호출할 함수
     public void DeleteAlarm(AlarmData alarm)
