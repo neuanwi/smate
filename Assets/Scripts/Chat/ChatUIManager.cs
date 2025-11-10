@@ -94,14 +94,130 @@ public class ChatManager : MonoBehaviour
         var message = messageInputField.text;
         if (string.IsNullOrWhiteSpace(message)) return;
 
+        // UI에 내가 쓴 말 올려두기
         SetTextAndScroll(requestText, requestScrollRect, message);
 
         messageInputField.text = "";
         messageInputField.ActivateInputField();
         messageInputField.caretPosition = 0;
 
-        StartCoroutine(SendChatMessage(message));
+        // 1) 키워드 감지
+        if (IsScreenshotCommand(message))
+        {
+            // 스크린샷 찍어서 보내는 흐름
+            StartCoroutine(CaptureAndSendWithExplain(message));
+        }
+        else
+        {
+            // 기존 텍스트만 보내는 흐름
+            StartCoroutine(SendChatMessage(message));
+        }
     }
+
+    private bool IsScreenshotCommand(string msg)
+    {
+        msg = msg.ToLower();
+        // 필요하면 더 추가
+        return msg.Contains("screenshot") ||
+               msg.Contains("스크린샷") ||
+               msg.Contains("화면 찍") ||
+               msg.Contains("캡쳐");
+    }
+
+    private IEnumerator CaptureAndSendWithExplain(string userMessage)
+    {
+        Debug.Log("[Capture] start");
+        yield return new WaitForEndOfFrame();
+
+        Texture2D tex = ScreenCapture.CaptureScreenshotAsTexture();
+        if (tex == null)
+        {
+            Debug.LogWarning("[Capture] tex == null (스크린샷 캡쳐 실패)");
+            SetTextAndScroll(chatLogText, chatLogScrollRect, "스크린샷 캡쳐 실패");
+            yield break;
+        }
+
+        Debug.Log($"[Capture] captured tex: {tex.width}x{tex.height}");
+
+        byte[] pngData = tex.EncodeToPNG();
+        Debug.Log($"[Capture] png bytes = {pngData.Length}");
+
+        // 로컬 저장 확인
+        string path = System.IO.Path.Combine(Application.persistentDataPath, "last_capture.png");
+        System.IO.File.WriteAllBytes(path, pngData);
+        Debug.Log("[Capture] saved to: " + path);
+
+        UnityEngine.Object.Destroy(tex);
+
+        // 실제 전송
+        yield return StartCoroutine(SendScreenshotRequest(userMessage, pngData));
+    }
+
+    private IEnumerator SendScreenshotRequest(string userMessage, byte[] pngData)
+    {
+        string url = $"{backendBaseUrl}/with-image?sessionId={currentSessionId}&domain={currentPersonaDomain}";
+        Debug.Log("[Screenshot] POST url = " + url);
+
+        WWWForm form = new WWWForm();
+        form.AddField("message", userMessage);
+        form.AddBinaryData("screenshot", pngData, "capture.png", "image/png");
+
+        using (UnityWebRequest www = UnityWebRequest.Post(url, form))
+        {
+            SetTextAndScroll(chatLogText, chatLogScrollRect, "… 스크린샷과 함께 설명 요청 중 …");
+
+            yield return www.SendWebRequest();
+
+            // 여기서 무조건 찍어라
+            Debug.Log($"[Screenshot POST] code={www.responseCode}, error={www.error}");
+
+            // 응답 본문도 찍어보기
+            string raw = www.downloadHandler.text;
+            Debug.Log("[Screenshot POST] body = " + raw);
+
+            if (www.result == UnityWebRequest.Result.ConnectionError ||
+                www.result == UnityWebRequest.Result.ProtocolError)
+            {
+                SetTextAndScroll(chatLogText, chatLogScrollRect, $"서버 오류: {www.error}");
+                yield break;
+            }
+
+            ChatResponseDto dto = null;
+            try
+            {
+                dto = JsonUtility.FromJson<ChatResponseDto>(raw);
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[ChatManager] JSON 파싱 실패 → 원문 표시: {e.Message}");
+                SetTextAndScroll(chatLogText, chatLogScrollRect, raw);
+                yield break;
+            }
+
+            if (dto != null && !string.IsNullOrEmpty(dto.reply))
+            {
+                TypewriterTo(chatLogText, chatLogScrollRect, dto.reply, charDelay);
+            }
+            else
+            {
+                SetTextAndScroll(chatLogText, chatLogScrollRect, "(응답 없음)");
+            }
+
+            if (dto != null && dto.task != null)
+            {
+                string taskTime = dto.task.time;
+                string taskText = dto.task.text;
+                if (!string.IsNullOrWhiteSpace(taskTime) && !string.IsNullOrWhiteSpace(taskText))
+                {
+                    AlarmManager.Instance?.SaveAlarm(taskTime, taskText);
+                }
+            }
+        }
+    }
+
+
+
+
 
     IEnumerator SendChatMessage(string message)
     {
@@ -237,4 +353,6 @@ public class ChatManager : MonoBehaviour
         public string time;
         public string text;
     }
+
+
 }
