@@ -189,16 +189,56 @@ public class ChatInputManager : MonoBehaviour
 
             // 3. 감정이 감지되었고, 1/3 확률 당첨 시 스티커 표시
 
-            if (!string.IsNullOrEmpty(detectedEmotion) &&
-                UnityEngine.Random.value < (1f / 2f)) // 👈 1/3 확률 (0.333...)
+            // 3. 감정이 감지되었으면 캐릭터 Animator에 Trigger 전송
+            // 👇 [수정됨] --------------------------------
+            if (!string.IsNullOrEmpty(detectedEmotion))
             {
+                // 1. 활성화된 캐릭터의 Animator 찾기
+                Animator activeAnimator = null;
+                if (kirbyCharacter != null && kirbyCharacter.activeInHierarchy)
+                {
+                    activeAnimator = kirbyCharacter.GetComponent<Animator>();
+                }
+                else if (shihoCharacter != null && shihoCharacter.activeInHierarchy)
+                {
+                    // (⭐️ ShihoAI.cs에도 kirby와 동일한 Trigger 파라미터(isHappy 등)가 있어야 합니다!)
+                    activeAnimator = shihoCharacter.GetComponent<Animator>();
+                }
+
+                if (activeAnimator != null)
+                {
+                    // 2. 감지된 문자열(string)을 Trigger 이름(string)으로 변환
+                    string triggerName = "";
+                    switch (detectedEmotion)
+                    {
+                        case "기쁨":
+                            triggerName = "isHappy"; // (Animator의 Trigger 이름과 일치해야 함)
+                            break;
+                        case "슬픔":
+                            triggerName = "isSad";
+                            break;
+                        case "화남":
+                            triggerName = "isAngry";
+                            break;
+                            // "보통"은 아무것도 안 함
+                    }
+
+                    // 3. 유효한 Trigger가 있으면 실행(SetTrigger)!
+                    if (!string.IsNullOrEmpty(triggerName))
+                    {
+                        Debug.Log($"[Animator] {triggerName} 트리거 실행!");
+                        activeAnimator.SetTrigger(triggerName);
+                    }
+                }
+
+                // (스티커 로직은 일단 그대로 둡니다)
                 if (popupSpawner != null && _activePopup != null)
                 {
-                    // ⭐️ PopupSpawner에게 "이 감정 스티커를, 팝업 반대편에 띄워줘!" 라고 요청
-                    // (이 함수는 PopupSpawner.cs에 새로 만들어야 합니다)
-                    //여기에 감정표현 구현!
+                    // ... (스티커 스포너를 호출하는 로직이 나중에 들어갈 수 있음) ...
+                    //여기에 감정표현 구현! (<- Animator가 구현했으므로 이 주석은 이제 지워도 됨)
                 }
             }
+            // 👆 [수정됨] --------------------------------
         }
 
 
