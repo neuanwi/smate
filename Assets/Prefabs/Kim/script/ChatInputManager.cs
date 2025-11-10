@@ -190,16 +190,13 @@ public class ChatInputManager : MonoBehaviour
             // 3. 감정이 감지되었고, 1/3 확률 당첨 시 스티커 표시
 
             if (!string.IsNullOrEmpty(detectedEmotion) &&
-                UnityEngine.Random.value < (3f / 3f)) // 👈 1/3 확률 (0.333...)
+                UnityEngine.Random.value < (1f / 2f)) // 👈 1/3 확률 (0.333...)
             {
                 if (popupSpawner != null && _activePopup != null)
                 {
                     // ⭐️ PopupSpawner에게 "이 감정 스티커를, 팝업 반대편에 띄워줘!" 라고 요청
                     // (이 함수는 PopupSpawner.cs에 새로 만들어야 합니다)
-                    popupSpawner.ShowEmotionSticker(
-                        _activePopup.transform as RectTransform,
-                        detectedEmotion
-                    );
+                    //여기에 감정표현 구현!
                 }
             }
         }
