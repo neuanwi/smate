@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -10,11 +10,9 @@ using UnityEngine.UI;
 public class ChatInputManager : MonoBehaviour
 {
     [Header("필수 연결 요소")]
-    public TMP_InputField questionInputField; // 질문 인풋
-    public PopupSpawner popupSpawner;         // 팝업 생성기
-    public UIAnimator inputFieldAnimator;     // 인풋 애니메이터
-
-    [Header("배경 버튼 (닫기용)")]
+    public TMP_InputField questionInputField;
+    public PopupSpawner popupSpawner;
+    public UIAnimator inputFieldAnimator;
     public GameObject backgroundClickCatcher;
 
     [Header("백엔드 설정")]
@@ -25,18 +23,12 @@ public class ChatInputManager : MonoBehaviour
     [Header("캐릭터 페르소나 설정")]
     public GameObject kirbyCharacter;
     public string kirbyPersonaName = "kirby";
-
     public GameObject shihoCharacter;
     public string shihoPersonaName = "tsundere";
 
-    // 현재 떠 있는 팝업
     private PopupController _activePopup;
-
-    // 마지막 대화 텍스트
     private const string DEFAULT_GREETING = "안녕하세요! 무엇이든 물어보세요.";
     private string _lastConversationText = DEFAULT_GREETING;
-
-    // 마지막으로 대화한 페르소나
     private string _lastActivePersonaDomain = "";
 
     void Start()
@@ -48,7 +40,6 @@ public class ChatInputManager : MonoBehaviour
             backgroundClickCatcher.SetActive(false);
     }
 
-    // 메인 채팅 버튼에서 호출
     public void OpenChatFlow()
     {
         if (inputFieldAnimator != null)
@@ -57,17 +48,14 @@ public class ChatInputManager : MonoBehaviour
         if (backgroundClickCatcher != null)
             backgroundClickCatcher.SetActive(true);
 
-        // 어떤 캐릭터가 켜져있는지 보고 도메인 결정
         string activePersona = ResolveActivePersona();
 
-        // 캐릭터가 바뀌었으면 대화 리셋
         if (!string.IsNullOrEmpty(_lastActivePersonaDomain) &&
             _lastActivePersonaDomain != activePersona)
         {
             _lastConversationText = DEFAULT_GREETING;
         }
 
-        // 기본 인사말 캐릭터별로 세팅
         if (_lastConversationText == DEFAULT_GREETING)
         {
             if (activePersona == kirbyPersonaName)
@@ -89,7 +77,6 @@ public class ChatInputManager : MonoBehaviour
             questionInputField.ActivateInputField();
     }
 
-    // 인풋필드에서 엔터
     public void OnSubmitQuestion()
     {
         if (questionInputField == null || _activePopup == null)
@@ -102,8 +89,118 @@ public class ChatInputManager : MonoBehaviour
         questionInputField.text = "";
         questionInputField.ActivateInputField();
 
-        StartCoroutine(HandleBackendResponse(question));
+        // 🔎 여기서 스크린샷 키워드 먼저 확인
+        if (IsScreenshotCommand(question))
+        {
+            StartCoroutine(CaptureAndSendWithExplain(question));
+        }
+        else
+        {
+            StartCoroutine(HandleBackendResponse(question));
+        }
     }
+
+    // ─────────────────────────────────────────
+    // 스크린샷 키워드 감지
+    private bool IsScreenshotCommand(string msg)
+    {
+        msg = msg.ToLower();
+        return msg.Contains("스크린샷") ||
+               msg.Contains("screenshot") ||
+               msg.Contains("캡쳐") ||
+               msg.Contains("화면 찍");
+    }
+
+    // 스크린샷 찍어서 with-image로 보내기
+    private IEnumerator CaptureAndSendWithExplain(string userMessage)
+    {
+        if (_activePopup != null)
+            _activePopup.SetText("스크린샷 찍는 중...");
+
+        yield return new WaitForEndOfFrame();
+
+        Texture2D tex = ScreenCapture.CaptureScreenshotAsTexture();
+        if (tex == null)
+        {
+            if (_activePopup != null)
+                _activePopup.SetText("스크린샷 캡처 실패");
+            yield break;
+        }
+
+        Debug.Log($"[ChatInputManager] captured tex: {tex.width}x{tex.height}");
+
+        byte[] pngData = tex.EncodeToPNG();
+        Debug.Log($"[ChatInputManager] png size: {pngData.Length} bytes");
+
+        UnityEngine.Object.Destroy(tex);
+
+        yield return StartCoroutine(SendScreenshotRequest(userMessage, pngData));
+    }
+
+    private IEnumerator SendScreenshotRequest(string userMessage, byte[] pngData)
+    {
+        string activePersona = ResolveActivePersona();
+
+        string url = $"{backendBaseUrl}/with-image?sessionId={currentSessionId}&domain={activePersona}";
+        Debug.Log("[ChatInputManager] screenshot POST url = " + url);
+
+        WWWForm form = new WWWForm();
+        form.AddField("message", userMessage);
+        form.AddBinaryData("screenshot", pngData, "capture.png", "image/png");
+
+        using (UnityWebRequest www = UnityWebRequest.Post(url, form))
+        {
+            yield return www.SendWebRequest();
+
+            Debug.Log($"[ChatInputManager] screenshot resp code={www.responseCode}, err={www.error}");
+            Debug.Log($"[ChatInputManager] screenshot body={www.downloadHandler.text}");
+
+            if (www.result == UnityWebRequest.Result.ConnectionError ||
+                www.result == UnityWebRequest.Result.ProtocolError)
+            {
+                if (_activePopup != null)
+                    _activePopup.SetText("서버 오류(이미지): " + www.error);
+                yield break;
+            }
+
+            string raw = www.downloadHandler.text;
+            BackendResponse parsed = null;
+            try
+            {
+                parsed = JsonUtility.FromJson<BackendResponse>(raw);
+            }
+            catch { }
+
+            string finalText;
+            if (parsed != null && !string.IsNullOrWhiteSpace(parsed.reply))
+            {
+                finalText = parsed.reply;
+
+                if (parsed.task != null &&
+                    !string.IsNullOrWhiteSpace(parsed.task.time) &&
+                    !string.IsNullOrWhiteSpace(parsed.task.text))
+                {
+                    var alarmManager = FindObjectOfType<AlarmManager>();
+                    if (alarmManager != null)
+                        alarmManager.SaveAlarm(parsed.task.time, parsed.task.text);
+                }
+            }
+            else
+            {
+                finalText = raw;
+            }
+
+            (string cleanedText, string detectedEmotion) = CleanAndDetectEmotion(finalText);
+            finalText = cleanedText;
+
+            if (_activePopup != null)
+                _activePopup.SetText(finalText);
+
+            _lastConversationText = finalText;
+            _lastActivePersonaDomain = activePersona;
+        }
+    }
+    // ─────────────────────────────────────────
 
     private IEnumerator HandleBackendResponse(string question)
     {
@@ -111,7 +208,6 @@ public class ChatInputManager : MonoBehaviour
             _activePopup.SetText("생각 중...");
 
         string activePersona = ResolveActivePersona();
-
         string url = $"{backendBaseUrl}?sessionId={currentSessionId}&domain={activePersona}";
         Debug.Log($"[ChatInputManager] 요청: {url}");
 
@@ -136,47 +232,31 @@ public class ChatInputManager : MonoBehaviour
         else
         {
             string raw = www.downloadHandler.text;
-
-            // 1) 백엔드가 우리가 말한 형태로 내려준 경우
-            //    { "text": "...", "task": { "time": "...", "text": "..." } }
             BackendResponse parsed = null;
-            try
-            {
-                parsed = JsonUtility.FromJson<BackendResponse>(raw);
-            }
-            catch
-            {
-                parsed = null;
-            }
+            try { parsed = JsonUtility.FromJson<BackendResponse>(raw); } catch { }
 
             if (parsed != null && !string.IsNullOrWhiteSpace(parsed.reply))
             {
                 finalText = parsed.reply;
 
-                // ✅ task가 있으면 AlarmManager에 저장
                 if (parsed.task != null &&
                     !string.IsNullOrWhiteSpace(parsed.task.time) &&
                     !string.IsNullOrWhiteSpace(parsed.task.text))
                 {
                     Debug.Log($"[ALARM from backend] time={parsed.task.time}, task={parsed.task.text}");
-
-                    // AlarmManager로 전달하여 저장 (파일 + 메모리)
                     var alarmManager = FindObjectOfType<AlarmManager>();
                     if (alarmManager != null)
                         alarmManager.SaveAlarm(parsed.task.time, parsed.task.text);
-                    else
-                        Debug.LogWarning("[ChatInputManager] AlarmManager를 찾지 못함! 저장 실패");
                 }
             }
             else
             {
-                // 2) 기존 Gemini 원본 그대로 온 경우 → 텍스트만 뽑기
                 string onlyText = ExtractGeminiText(raw);
                 finalText = string.IsNullOrWhiteSpace(onlyText) ? raw : onlyText;
             }
 
             (string cleanedText, string detectedEmotion) = CleanAndDetectEmotion(finalText);
-            finalText = cleanedText; // 실제 팝업에 표시될 텍스트 (모두 제거된)
+            finalText = cleanedText;
 
             if (_activePopup != null)
             {
@@ -201,19 +281,10 @@ public class ChatInputManager : MonoBehaviour
             }
         }
 
-
-        // 4. 마지막 대화로 저장
         _lastConversationText = finalText;
         _lastActivePersonaDomain = activePersona;
-
-        //if (_activePopup != null)
-        //    _activePopup.SetText(finalText);
-
-        //_lastConversationText = finalText;
-        //_lastActivePersonaDomain = activePersona;
     }
 
-    // 배경 클릭해서 닫기
     public void CloseChatFlow()
     {
         if (inputFieldAnimator != null)
@@ -229,7 +300,6 @@ public class ChatInputManager : MonoBehaviour
         }
     }
 
-    // 외부에서 캐릭터 바뀌었다고 알려줄 때
     public void OnCharacterSwitched()
     {
         _lastConversationText = DEFAULT_GREETING;
