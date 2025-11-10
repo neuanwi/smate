@@ -109,56 +109,12 @@ TextureImporter:
       name: Shiho Munakata_0458_0
       rect:
         serializedVersion: 2
-        x: 104
-        y: 143
-        width: 6
-        height: 11
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 2a540110491c5c3c0800000000000000
-      internalID: -4339849824484440670
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Shiho Munakata_0458_1
-      rect:
-        serializedVersion: 2
-        x: 112
-        y: 149
-        width: 8
-        height: 18
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: a002f7002f2719360800000000000000
-      internalID: 7174642065093894154
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Shiho Munakata_0458_2
-      rect:
-        serializedVersion: 2
         x: 85
         y: 60
         width: 65
-        height: 86
+        height: 103
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -175,7 +131,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID: 7979908a49ec7b34085ed301a3464ea5
     internalID: 0
     vertices: []
     indices: 
@@ -185,9 +141,8 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Shiho Munakata_0458_0: -4339849824484440670
+      Shiho Munakata_0458_0: -5752609772162130940
       Shiho Munakata_0458_1: 7174642065093894154
-      Shiho Munakata_0458_2: -5752609772162130940
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
