@@ -178,14 +178,15 @@ public class ChatInputManager : MonoBehaviour
             (string cleanedText, string detectedEmotion) = CleanAndDetectEmotion(finalText);
             finalText = cleanedText; // 실제 팝업에 표시될 텍스트 (모두 제거된)
 
-                                     //
-                                     // 2. 팝업에 최종 텍스트 표시
-            if (_activePopup != null) 
+            if (_activePopup != null)
             {
                 _activePopup.SetText(finalText);
-                Debug.Log("감정 찾았다");
+                if (!string.IsNullOrEmpty(detectedEmotion))
+                    Debug.Log($"[감정 감지됨] {detectedEmotion}");
+                else
+                    Debug.Log("[감정 없음]");
             }
-                
+
             // 3. 감정이 감지되었고, 1/3 확률 당첨 시 스티커 표시
 
             if (!string.IsNullOrEmpty(detectedEmotion) &&
