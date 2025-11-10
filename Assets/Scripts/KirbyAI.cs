@@ -13,7 +13,7 @@ public class KirbyAI : MonoBehaviour
 
     [Range(0, 1)]
     public float event1Chance = 0.3f;
-    public float event1Duration = 2.0f; // 한숨 애니메이션 실제 길이
+    public float event1Duration = 5.0f; // 한숨 애니메이션 실제 길이
 
 
 
@@ -45,7 +45,12 @@ public class KirbyAI : MonoBehaviour
     public Vector3 uiOffset = new Vector3(0f, 50f, 0f);
     private bool isPausedByMenu = false; // 메뉴 때문에 AI가 멈췄는지 기억
 
-    void Awake() // 👈 Start()를 Awake()로 변경!
+    [Header("Context Menu Animation")]    
+    public GameObject[] animatedMenuItems; // 애니메이션을 적용할 메뉴 아이템(버튼)들
+    public float menuAnimDuration = 0.15f; // 각 아이템이 커지는 데 걸리는 시간
+    public float menuAnimStagger = 0.05f;  // 아이템이 순차적으로 나타나는 시간 간격
+
+    void Awake() 
     {
         anim = GetComponent<Animator>();
         spriteRenderer = GetComponent<SpriteRenderer>();
@@ -237,14 +242,20 @@ public class KirbyAI : MonoBehaviour
 
         if (Input.GetMouseButtonDown(1) && !bMouseDrag && !isGridPanelActive) // 👈 이제 이 변수를 알 수 있음
         {
-            StopAllCoroutines();
+            StopAllCoroutines(); // AI 행동 정지
 
             isPausedByMenu = true; // AI를 메뉴 때문에 멈췄다고 기록
 
             if (contextMenuPanel != null)
             {
+                // 패널의 위치를 캐릭터 위치로 이동 (기존 로직)
+                contextMenuPanel.transform.position = gameObject.transform.position + uiOffset; // uiOffset도 활용
+
+                // 패널(배경)을 먼저 활성화
                 contextMenuPanel.SetActive(true);
-                contextMenuPanel.transform.position = gameObject.transform.position;
+
+                // 애니메이션 코루틴 시작!
+                StartCoroutine(ShowAnimatedMenuItems());
             }
 
             // (추가한 버그 수정 코드)
@@ -260,5 +271,70 @@ public class KirbyAI : MonoBehaviour
                 contextMenuPanel.SetActive(false);
             }
         }
+    }
+    /// <summary>
+    /// 메뉴 아이템들을 순차적으로 보여주는 코루틴
+    /// </summary>
+    IEnumerator ShowAnimatedMenuItems()
+    {
+        // --- ⬇️⬇️⬇️ 수정된 부분 (FIX) ⬇️⬇️⬇️ ---
+        // 애니메이션 시작 전, 모든 버튼을 미리 끄고 크기를 리셋합니다.
+        // 이것이 "깜빡임" 현상을 제거합니다.
+        foreach (var item in animatedMenuItems)
+        {
+            if (item != null)
+            {
+                item.SetActive(false);
+                item.transform.localScale = Vector3.zero;
+            }
+        }
+        // --- ⬆️⬆️⬆️ 수정 끝 ⬆️⬆️⬆️ ---
+
+
+        // 이제 (깨끗한 상태에서) 하나씩 순차적으로 켭니다.
+        foreach (var item in animatedMenuItems)
+        {
+            if (item == null) continue;
+
+            // 1. 아이템의 크기를 0으로 리셋
+            // (위에서 이미 했으므로 이 줄은 삭제하거나 남겨도 됩니다. 하지만 위에서 하는 것이 더 확실합니다.)
+            // item.transform.localScale = Vector3.zero; 
+
+            // 2. 아이템을 활성화 (이래야 애니메이션이 보임)
+            item.SetActive(true);
+
+            // 3. 'PopIn' 애니메이션 코루틴을 각 아이템별로 실행
+            StartCoroutine(AnimateItemPopIn(item.transform));
+
+            // 4. 다음 아이템이 나타날 때까지 약간 대기 (Stagger)
+            yield return new WaitForSeconds(menuAnimStagger);
+        }
+    }
+
+    /// <summary>
+    /// 개별 아이템의 크기를 0에서 1로 키우는 'Pop-in' 애니메이션
+    /// </summary>
+    IEnumerator AnimateItemPopIn(Transform itemTransform)
+    {
+        float timer = 0f;
+        while (timer < menuAnimDuration)
+        {
+            // 오브젝트가 중간에 비활성화되면(예: 배경 클릭) 코루틴 중지
+            if (itemTransform == null || !itemTransform.gameObject.activeInHierarchy)
+                yield break;
+
+            // 시간에 따라 크기를 0에서 1로 보간 (Ease-Out 효과 적용)
+            float progress = Mathf.Clamp01(timer / menuAnimDuration);
+            float scale = 1f - (1f - progress) * (1f - progress); // Quadratic Ease-Out
+
+            itemTransform.localScale = new Vector3(scale, scale, scale);
+
+            timer += Time.deltaTime;
+            yield return null;
+        }
+
+        // 애니메이션이 끝나면 정확히 1x1x1 크기로 고정
+        if (itemTransform != null)
+            itemTransform.localScale = Vector3.one;
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using UnityEngine;
+using UnityEngine.UI; // 👈 [추가 1] UI 기능을 사용하기 위해 추가
 
 public class SonicAI : MonoBehaviour
 {
@@ -14,8 +15,6 @@ public class SonicAI : MonoBehaviour
     [Range(0, 1)]
     public float event1Chance = 0.3f;
     public float event1Duration = 2.0f; // 한숨 애니메이션 실제 길이
-
-
 
     private Animator anim;
     private SpriteRenderer spriteRenderer;
@@ -34,23 +33,25 @@ public class SonicAI : MonoBehaviour
 
     // UI 패널을 연결할 변수 추가
     public GameObject contextMenuPanel;
-
-    // --- ⬇️⬇️⬇️ 여기에 두 줄을 추가하세요! ⬇️⬇️⬇️ ---
     public GameObject characterGridPanel;       // 캐릭터 선택 그리드 UI
     public GameObject gridBackgroundCatcher;    // 그리드 배경 클릭 캐처
-
     public GameObject clickCatcher; // '허공' 클릭을 감지하는 메인 캐처
 
     // UI 오프셋 변수 추가
-    public Vector3 uiOffset = new Vector3(0f, 50f, 0f);
+    public Vector3 uiOffset = new Vector3(0f, 50f, 0f); // (이 값은 이제 사용되지 않습니다)
     private bool isPausedByMenu = false; // 메뉴 때문에 AI가 멈췄는지 기억
 
-    void Awake() // 👈 Start()를 Awake()로 변경!
+    // 👈 --- [추가 2] KirbyAI의 애니메이션 변수들 추가 ---
+    [Header("Context Menu Animation")]
+    public GameObject[] animatedMenuItems; // 애니메이션을 적용할 메뉴 아이템(버튼)들
+    public float menuAnimDuration = 0.15f; // 각 아이템이 커지는 데 걸리는 시간
+    public float menuAnimStagger = 0.05f;  // 아이템이 순차적으로 나타나는 시간 간격
+    // --- ⬆️⬆️⬆️ ---
+
+    void Awake()
     {
         anim = GetComponent<Animator>();
         spriteRenderer = GetComponent<SpriteRenderer>();
-
-        // --- 화면 경계 계산 (이전과 동일) ---
         mainCamera = Camera.main;
         spriteHalfWidth = spriteRenderer.bounds.size.x / 2f;
         spriteHalfHeight = spriteRenderer.bounds.size.y / 2f;
@@ -60,21 +61,14 @@ public class SonicAI : MonoBehaviour
         maxX = maxScreenPos.x - spriteHalfWidth;
         minY = minScreenPos.y + spriteHalfHeight;
         maxY = maxScreenPos.y - spriteHalfHeight;
-        // ------------------------------------------
-
     }
+
     void OnEnable()
     {
-        // (이제 이 메서드가 호출되는 시점에는
-        //  Awake()가 이미 실행되어 anim이 할당된 상태입니다)
-
-        //시작할 때 UI 패널을 숨김
         if (contextMenuPanel != null)
         {
             contextMenuPanel.SetActive(false);
         }
-
-        // (추가) 시작할 때 그리드 패널들도 숨김
         if (characterGridPanel != null)
         {
             characterGridPanel.SetActive(false);
@@ -83,41 +77,30 @@ public class SonicAI : MonoBehaviour
         {
             gridBackgroundCatcher.SetActive(false);
         }
-
-        // AI 상태를 확실하게 초기화
         isPausedByMenu = false;
-
-        // AI 시작
         StopAllCoroutines();
-        StartCoroutine(ThinkAndAct()); // <-- 이제 이 코드를 실행해도 안전합니다.
+        StartCoroutine(ThinkAndAct());
     }
 
     void Start()
     {
-        // Start()는 비워두거나,
-        // 나중에 다른 초기화 로직이 필요하면 여기에 작성합니다.
+        // 비워둠
     }
 
     void Update()
     {
-        // AI가 메뉴 때문에 멈췄는데, 메뉴가 (허공 클릭 등으로) 꺼졌다면
         if (isPausedByMenu && contextMenuPanel != null && !contextMenuPanel.activeSelf && !bMouseDrag)
         {
-            // (추가) 그리드 패널도 껐는지 확인
             if (characterGridPanel != null && characterGridPanel.activeSelf)
             {
-                // 그리드 패널이 켜져있다면 AI는 계속 멈춰있어야 함
                 return;
             }
-
-            isPausedByMenu = false; // AI를 다시 시작시킬 거니까, 상태를 리셋
-
-            StopAllCoroutines(); //  [1] AI가 중복 실행되지 않도록 먼저 모두 중지
-            StartCoroutine(ThinkAndAct()); // AI(생각) 다시 시작!
+            isPausedByMenu = false;
+            StopAllCoroutines();
+            StartCoroutine(ThinkAndAct());
         }
     }
 
-    // --- 화면 경계 제한 (이전과 동일) ---
     void LateUpdate()
     {
         Vector3 currentPosition = transform.position;
@@ -127,12 +110,10 @@ public class SonicAI : MonoBehaviour
     }
 
 
-    // --- AI 행동 로직 (이전과 동일) ---
     IEnumerator ThinkAndAct()
     {
         while (true)
         {
-            // --- 1. IDLE 또는 SIGH 상태 ---
             anim.SetBool("isWalking", false);
 
             if (Random.value < event1Chance)
@@ -146,9 +127,7 @@ public class SonicAI : MonoBehaviour
                 yield return new WaitForSeconds(idleTime);
             }
 
-            // --- 2. 걷기 상태 (이전과 동일) ---
             anim.SetBool("isWalking", true);
-
             float xDirection = (Random.Range(0, 2) == 0) ? -1f : 1f;
             float yDirection = 0f;
             if (Random.value < changeYDirectionChance)
@@ -156,38 +135,26 @@ public class SonicAI : MonoBehaviour
                 yDirection = (Random.Range(0, 2) == 0) ? -1f : 1f;
             }
 
-            spriteRenderer.flipX = (xDirection == 1f);
+            spriteRenderer.flipX = (xDirection == 1f); // Sonic 고유 로직
 
             float moveTime = Random.Range(minMoveTime, maxMoveTime);
             float timer = 0;
-
             while (timer < moveTime)
             {
                 Vector3 moveVector = new Vector3(xDirection, yDirection, 0);
                 transform.Translate(moveVector.normalized * moveSpeed * Time.deltaTime);
-
                 timer += Time.deltaTime;
                 yield return null;
             }
         }
     }
 
-    
-
-    // 1. 커비의 Collider에 마우스 클릭이 '시작'될 때 1번 호출됨
+    // --- 마우스 드래그 로직 (이전과 동일) ---
     void OnMouseDown()
     {
-        // 1. 'isDragging' 스위치를 켠다 (애니메이션 재생)
         anim.SetBool("isDragging", true);
-
-        // 2. AI의 '생각'을 멈춘다! (가장 중요)
-        // (ThinkAndAct 코루틴을 강제 종료해서, 드래그 중에 맘대로 걷지 못하게 함)
         StopAllCoroutines();
-
         bMouseDrag = true;
-
-        // --- ⬇️⬇️⬇️ 여기가 수정된 부분입니다! ⬇️⬇️⬇️ ---
-        // 3. 드래그가 시작되면 캐릭터 선택 관련 UI들을 강제로 숨깁니다.
         if (characterGridPanel != null)
         {
             characterGridPanel.SetActive(false);
@@ -196,58 +163,47 @@ public class SonicAI : MonoBehaviour
         {
             gridBackgroundCatcher.SetActive(false);
         }
-        // --- ⬆️⬆️⬆️ 수정 끝 ⬆️⬆️⬆️ ---
     }
 
-    // 2. 마우스를 '클릭한 채로 움직이는' 동안 매 프레임 호출됨
     void OnMouseDrag()
     {
-        // 1. 마우스의 현재 위치를 게임 세계 좌표로 변환
-        // (mainCamera는 Start()에서 이미 찾아놨음)
         Vector3 mousePos = mainCamera.ScreenToWorldPoint(Input.mousePosition);
-
-        // 2. 커비의 위치를 마우스 위치로 강제 이동
-        // (Z축은 원래 값으로 유지해야 카메라에서 보임)
         transform.position = new Vector3(mousePos.x, mousePos.y, transform.position.z);
-
-        // (참고: 이렇게 움직여도 LateUpdate()가 경계선 밖으로 못 나가게 잡아줍니다)
     }
 
-    // 3. 마우스 버튼을 '뗄' 때 1번 호출됨
     void OnMouseUp()
     {
-        // 1. 'isDragging' 스위치를 끈다 (Idle 애니메이션으로 돌아감)
         anim.SetBool("isDragging", false);
-
         isPausedByMenu = false;
-
-        // 2. 멈췄던 AI의 '생각'을 다시 시작시킨다!
         StopAllCoroutines();
         StartCoroutine(ThinkAndAct());
-
         bMouseDrag = false;
     }
-    // KirbyAI.cs 와 ShihoAI.cs 둘 다 수정
+
+    // 👈 --- [수정 3] KirbyAI의 OnMouseOver 로직 적용 (단, uiOffset 제거) ---
     void OnMouseOver()
     {
-        // --- ⬇️⬇️⬇️ 바로 이 줄을 추가해야 합니다! ⬇️⬇️⬇️ ---
-        // (수정) 그리드 패널이 켜져있는지 확인하는 변수
         bool isGridPanelActive = (characterGridPanel != null && characterGridPanel.activeSelf);
-        // --- ⬆️⬆️⬆️ ---
 
-        if (Input.GetMouseButtonDown(1) && !bMouseDrag && !isGridPanelActive) // 👈 이제 이 변수를 알 수 있음
+        if (Input.GetMouseButtonDown(1) && !bMouseDrag && !isGridPanelActive)
         {
             StopAllCoroutines();
-
-            isPausedByMenu = true; // AI를 메뉴 때문에 멈췄다고 기록
+            isPausedByMenu = true;
 
             if (contextMenuPanel != null)
             {
-                contextMenuPanel.SetActive(true);
+                // 🚨🚨🚨 여기가 수정된 핵심입니다! 🚨🚨🚨
+                // 'uiOffset'을 더하지 않고, 캐릭터의 월드 위치를 그대로 사용합니다.
+                // (Kirby가 0,0,0으로 잘 작동하는 것과 동일하게 맞춥니다)
                 contextMenuPanel.transform.position = gameObject.transform.position;
+
+                // 패널(배경)을 먼저 활성화
+                contextMenuPanel.SetActive(true);
+
+                // 애니메이션 코루틴 시작!
+                StartCoroutine(ShowAnimatedMenuItems());
             }
 
-            // (추가한 버그 수정 코드)
             if (clickCatcher != null)
             {
                 clickCatcher.SetActive(true);
@@ -260,5 +216,57 @@ public class SonicAI : MonoBehaviour
                 contextMenuPanel.SetActive(false);
             }
         }
+    }
+
+    // 👈 --- [추가 4] KirbyAI의 애니메이션 코루틴 2개 추가 ---
+
+    /// <summary>
+    /// 메뉴 아이템들을 순차적으로 보여주는 코루틴 (깜빡임 수정됨)
+    /// </summary>
+    IEnumerator ShowAnimatedMenuItems()
+    {
+        // "깜빡임" 현상을 제거하기 위해
+        // 애니메이션 시작 전, 모든 버튼을 미리 끄고 크기를 리셋합니다.
+        foreach (var item in animatedMenuItems)
+        {
+            if (item != null)
+            {
+                item.SetActive(false);
+                item.transform.localScale = Vector3.zero;
+            }
+        }
+
+        // 이제 (깨끗한 상태에서) 하나씩 순차적으로 켭니다.
+        foreach (var item in animatedMenuItems)
+        {
+            if (item == null) continue;
+
+            item.SetActive(true);
+            StartCoroutine(AnimateItemPopIn(item.transform));
+            yield return new WaitForSeconds(menuAnimStagger);
+        }
+    }
+
+    /// <summary>
+    /// 개별 아이템의 크기를 0에서 1로 키우는 'Pop-in' 애니메이션
+    /// </summary>
+    IEnumerator AnimateItemPopIn(Transform itemTransform)
+    {
+        float timer = 0f;
+        while (timer < menuAnimDuration)
+        {
+            if (itemTransform == null || !itemTransform.gameObject.activeInHierarchy)
+                yield break;
+
+            float progress = Mathf.Clamp01(timer / menuAnimDuration);
+            float scale = 1f - (1f - progress) * (1f - progress); // Quadratic Ease-Out
+
+            itemTransform.localScale = new Vector3(scale, scale, scale);
+            timer += Time.deltaTime;
+            yield return null;
+        }
+
+        if (itemTransform != null)
+            itemTransform.localScale = Vector3.one;
     }
 }
