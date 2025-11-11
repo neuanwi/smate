@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;   // LayoutRebuilder, CanvasGroup
+using System.Text.RegularExpressions;
 
 public class PopupSpawner : MonoBehaviour
 {
@@ -39,6 +40,8 @@ public class PopupSpawner : MonoBehaviour
     private Transform _targetToFollow;
 
     private bool _isSliding = false;
+
+    private Coroutine _hideTimerCoroutine;
     void Start()
     {
         if (mainCamera == null)
@@ -150,6 +153,12 @@ public class PopupSpawner : MonoBehaviour
 
         // ★ 여기서 “이 캐릭터를 따라가라”고 기억시킴
         _targetToFollow = activeCharacterTarget;
+
+        if (_hideTimerCoroutine != null)
+        {
+            StopCoroutine(_hideTimerCoroutine);
+            _hideTimerCoroutine = null;
+        }
 
         return _currentPopupInstance;
     }
@@ -272,5 +281,96 @@ public class PopupSpawner : MonoBehaviour
 
         // ★ 따라다니기 중지
         _targetToFollow = null;
+
+        if (_hideTimerCoroutine != null)
+        {
+            StopCoroutine(_hideTimerCoroutine);
+            _hideTimerCoroutine = null;
+        }
+    }
+
+    /// <summary>
+    /// ⭐️ [신규]
+    /// 텍스트를 담은 팝업을 띄우고, 일정 시간 뒤에 자동으로 숨깁니다.
+    /// (ChatInputManager의 시스템 혼잣말에 사용)
+    /// </summary>
+    public void ShowTemporaryRemark(string text, float duration)
+    {
+
+        // ⭐️⭐️⭐️ [신규 추가된 로직] ⭐️⭐️⭐️
+        // 팝업 인스턴스가 '존재하고' '활성화(보이는 상태)'인지 확인
+        // (Unity의 'fake null'을 처리하기 위해 _currentPopupInstance만으로도 null 체크 가능)
+        if (_currentPopupInstance && _currentPopupInstance.gameObject.activeInHierarchy)
+        {
+            // ⭐️ 이미 팝업이 떠 있다면 (채팅 중이거나 다른 혼잣말 중)
+            // ⭐️ 아무것도 하지 않고, 새 혼잣말을 무시합니다.
+            Debug.Log("[PopupSpawner] 팝업이 이미 활성화되어 있어 새 혼잣말을 무시합니다.");
+            return; // ⭐️ 함수 종료
+        }
+        // ⭐️⭐️⭐️ [여기까지 추가] ⭐️⭐️⭐️
+
+        // 1. 기존 팝업 띄우는 로직을 그대로 재사용하여 팝업을 가져옴
+        //    (이 과정에서 _currentPopupInstance가 생성/설정됨)
+        PopupController popup = ShowPopupNearTarget();
+
+        if (popup == null)
+        {
+            Debug.LogError("[PopupSpawner] ShowTemporaryRemark가 팝업을 만들지 못했습니다.");
+            return;
+        }
+
+        // 2. 텍스트 설정
+        string cleanedText = CleanEmotionTags(text);
+        popup.SetText(cleanedText); // ⭐️ 'text' 대신 'cleanedText'를 전달
+
+        // 3. 기존에 실행 중인 자동 숨김 타이머가 있다면 중지 (새 타이머로 갱신)
+        if (_hideTimerCoroutine != null)
+        {
+            StopCoroutine(_hideTimerCoroutine);
+        }
+
+        // 4. 새로운 자동 숨김 타이머 시작
+        _hideTimerCoroutine = StartCoroutine(HidePopupAfterDelay(duration));
+    }
+
+    /// <summary>
+    /// ⭐️ [신규]
+    /// N초 뒤에 팝업을 숨기는 코루틴
+    /// </summary>
+    private System.Collections.IEnumerator HidePopupAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+
+        // ⭐️ 5초가 지났으므로 팝업 숨김
+        Debug.Log("[PopupSpawner] 임시 팝업 시간 만료. 숨깁니다.");
+        HidePopup();
+        _hideTimerCoroutine = null; // 타이머 코루틴 참조 클리어
+    }
+    // ⭐️⭐️⭐️ [아래 메서드를 새로 추가하세요] ⭐️⭐️⭐️
+
+    /// <summary>
+    /// ⭐️ [신규] 텍스트에서 (감정) 태그를 정리합니다.
+    /// (ChatInputManager의 CleanAndDetectEmotion와 유사한 로직)
+    /// </summary>
+    /// <param name="src">원본 텍스트 (예: "흥... (화남)")</param>
+    /// <returns>정리된 텍스트 (예: "흥...")</returns>
+    private string CleanEmotionTags(string src)
+    {
+        if (string.IsNullOrWhiteSpace(src)) return src;
+
+        // ① (숫자자) 꼬리표 제거 (혹시 포함될 경우 대비)
+        string temp = Regex.Replace(src, @"\s*\(\d+자\)\s*$", "");
+
+        // ② (감정) 태그 감지: (기쁨|슬픔|보통|화남)
+        var m = Regex.Match(temp, @"\((기쁨|슬픔|보통|화남)\)\s*$");
+
+        if (m.Success)
+        {
+            // ⭐️ 감정이 감지되면, (감정) 태그 앞부분까지만 잘라서 반환
+            return temp.Substring(0, m.Index).TrimEnd();
+        }
+
+        // ⭐️ 감지되지 않으면, (숫자자)만 제거된 텍스트 반환
+        return temp;
     }
 }

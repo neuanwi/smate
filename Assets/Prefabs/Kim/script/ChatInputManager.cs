@@ -16,6 +16,12 @@ using System.IO;
 
 public class ChatInputManager : MonoBehaviour
 {
+
+    [Header("배경 스크린샷 설정")]
+    [Tooltip("배경 스크린샷을 찍어 백엔드로 전송할 주기 (초)")]
+    public float screenshotIntervalSeconds = 180f; // 3분 (3 * 60)
+
+
     [Header("필수 연결 요소")]
     public TMP_InputField questionInputField; // 질문 인풋
     public PopupSpawner popupSpawner;         // 팝업 생성기
@@ -49,8 +55,17 @@ public class ChatInputManager : MonoBehaviour
     // 마지막으로 대화한 페르소나
     private string _lastActivePersonaDomain = "";
 
+    // ⭐️ [신규] 시스템 스크린샷 응답(재밌는 말)을 저장할 변수
+    private string _lastSystemRemark = "";
+
+
+
+
     void Start()
     {
+
+        StartCoroutine(PeriodicScreenshotCoroutine());
+
         if (inputFieldAnimator != null)
             inputFieldAnimator.HideUI();
 
@@ -283,6 +298,137 @@ public class ChatInputManager : MonoBehaviour
         _lastActivePersonaDomain = activePersona;
     }
 
+    /// <summary>
+    /// ⭐️ [신규 추가]
+    /// 정해진 주기(screenshotIntervalSeconds)마다 스크린샷을 캡처하고
+    /// 백엔드로 전송하는 코루틴을 시작합니다.
+    /// </summary>
+    private IEnumerator PeriodicScreenshotCoroutine()
+    {
+        // 첫 실행은 게임 시작 후 5초 뒤에 시작 (선택적)
+        yield return new WaitForSeconds(5.0f);
+
+        while (true)
+        {
+            Debug.Log($"[ChatInputManager] {screenshotIntervalSeconds}초 경과. 배경 스크린샷 캡처 시도...");
+
+            byte[] screenshotBytes = null;
+            try
+            {
+                // ⭐️ (주의) 이 작업은 동기식이므로 캡처 동안 잠시 멈출 수 있습니다.
+                screenshotBytes = DesktopCapture.CaptureDesktopAsPNG();
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[ChatInputManager] 배경 스크린샷 캡처 중 예외: {e.Message}");
+                screenshotBytes = null;
+            }
+
+            if (screenshotBytes != null && screenshotBytes.Length > 0)
+            {
+                Debug.Log($"[ChatInputManager] 배경 스크린샷 캡처 성공 (크기: {screenshotBytes.Length} bytes). 백엔드 전송 시작...");
+                // 캡처한 스크린샷을 백엔드로 전송하는 새 코루틴을 시작합니다.
+                // 이 코루틴이 끝나는 것을 기다리지 않고(StartCoroutine), 
+                // 바로 다음 타이머를 위해 yield합니다.
+                StartCoroutine(SendScreenshotToBackend(screenshotBytes));
+            }
+            else
+            {
+                Debug.LogWarning("[ChatInputManager] 배경 스크린샷 캡처 실패 (Bytes == null or 0)");
+            }
+
+            // 다음 주기까지 대기
+            yield return new WaitForSeconds(screenshotIntervalSeconds);
+        }
+    }
+
+    /// <summary>
+    /// ⭐️ [수정됨]
+    /// 캡처된 스크린샷 바이트를 백엔드로 전송합니다.
+    /// 응답을 파싱하여 'SYSTEM_REMARK' 타입이면 별도 변수에 저장합니다.
+    /// </summary>
+    /// <param name="screenshotBytes">전송할 PNG 이미지 바이트</param>
+    private IEnumerator SendScreenshotToBackend(byte[] screenshotBytes)
+    {
+        if (screenshotBytes == null || screenshotBytes.Length == 0)
+        {
+            Debug.LogError("[ChatInputManager] 전송할 스크린샷 데이터가 없습니다.");
+            yield break; // 코루틴 종료
+        }
+
+        // 1. WWWForm 생성
+        WWWForm form = new WWWForm();
+        form.AddField("question", "[SYSTEM_SCREENSHOT]");
+        form.AddBinaryData("screenshot", screenshotBytes, "desktop_screenshot.png", "image/png");
+
+        // 4. URL 설정 (기존과 동일)
+        string activePersona = ResolveActivePersona();
+        string url = $"{backendBaseUrl}?sessionId={currentSessionId}&domain={activePersona}&computerId={computerId}";
+
+        Debug.Log($"[ChatInputManager] 배경 스크린샷 전송 요청: {url}");
+
+        // 5. WWWForm을 사용하여 POST 요청 생성 및 전송
+        using (UnityWebRequest www = UnityWebRequest.Post(url, form))
+        {
+            www.downloadHandler = new DownloadHandlerBuffer();
+            yield return www.SendWebRequest();
+
+            // 6. ⭐️ [수정] 결과 로깅 및 '파싱'
+            if (www.result == UnityWebRequest.Result.ConnectionError ||
+                www.result == UnityWebRequest.Result.ProtocolError)
+            {
+                Debug.LogError($"[ChatInputManager] 배경 스크린샷 전송 실패: {www.error}");
+            }
+            else
+            {
+                Debug.Log($"[ChatInputManager] 배경 스크린샷 전송 완료. 응답 코드: {www.responseCode}");
+
+                string rawJson = www.downloadHandler.text;
+                if (string.IsNullOrWhiteSpace(rawJson))
+                {
+                    Debug.Log("[ChatInputManager] 배경 응답이 비어있습니다.");
+                    yield break;
+                }
+
+                // ⭐️ [신규] 백엔드 응답 파싱
+                try
+                {
+                    BackendResponse parsed = JsonUtility.FromJson<BackendResponse>(rawJson);
+
+                    // ⭐️ 'SYSTEM_REMARK' 타입이고, 'reply'에 내용이 있는지 확인
+                    if (parsed != null && parsed.type == "SYSTEM_REMARK" && !string.IsNullOrWhiteSpace(parsed.reply))
+                    {
+                        // ⭐️ 말풍선 대신, 별도 변수에 저장!
+                        _lastSystemRemark = parsed.reply;
+                        Debug.Log($"[ChatInputManager] 💬 새 시스템 한마디 저장: {_lastSystemRemark}");
+
+                        // ⭐️ (선택적) 여기서 이 _lastSystemRemark를 
+                        //    다른 컴포넌트(예: 별도 UI)로 보낼 수 있습니다.
+                        //    FindObjectOfType<MyRemarkUI>()?.ShowRemark(_lastSystemRemark);
+
+                        // ⭐️ 2. [신규] PopupSpawner를 통해 5초간 팝업으로 띄우기
+                        if (popupSpawner != null)
+                        {
+                            popupSpawner.ShowTemporaryRemark(_lastSystemRemark, 5.0f);
+                        }
+                    }
+                    else
+                    {
+                        Debug.Log($"[ChatInputManager] 배경 응답 수신 (저장할 내용 없음): {rawJson}");
+                    }
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning($"[ChatInputManager] 배경 응답 파싱 실패: {e.Message}. Raw: {rawJson}");
+                }
+            }
+        }
+    }
+
+
+
+
+
     // 배경 클릭해서 닫기
     public void CloseChatFlow()
     {
@@ -382,6 +528,7 @@ public class ChatInputManager : MonoBehaviour
     {
         public string reply; // 대화 텍스트
         public BackendTask task; // 알람이 있으면 채워짐
+        public string type; // ⭐️ [신규] "CHAT" 또는 "SYSTEM_REMARK"
     }
 
     [Serializable]
