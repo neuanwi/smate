@@ -1,34 +1,104 @@
 ﻿using UnityEngine;
-using TMPro; // 👈 TextMeshPro를 사용하려면 필수!
-using System.Collections; // 👈 Coroutine(코루틴)을 사용하려면 필수!
+using TMPro;
+using System.Collections;
 
 public class PopupController : MonoBehaviour
 {
-    // 1. 인스펙터에서 팝업 안의 'Text (TMP)' 오브젝트를 연결합니다.
-    [SerializeField]
-    private TextMeshProUGUI answerText;
-
-    // 2. ⭐️ 유저가 요청한 바로 그 기능! 인스펙터에서 속도 조절
-    [SerializeField]
-    [Tooltip("AI 답변 글자당 지연(초). 예: 0.02f")]
-    private float typingSpeed = 0.02f;
-
-    // 3. ⭐️ 현재 실행 중인 타이핑 애니메이션을 제어하기 위한 변수
+    [Header("텍스트 타이핑")]
+    [SerializeField] private TextMeshProUGUI answerText;
+    [SerializeField][Tooltip("글자당 딜레이(초)")] private float typingSpeed = 0.02f;
     private Coroutine _typingCoroutine;
 
+    [Header("슬라이드 인 설정")]
+    [SerializeField]
+    [Tooltip("팝업이 켜질 때 슬라이드 인을 자동 실행할지 여부")]
+    private bool playSlideOnEnable = true;
+
+    [SerializeField]
+    [Tooltip("슬라이드 인 시간(초)")]
+    private float slideDuration = 0.25f;
+
+    [SerializeField]
+    [Tooltip("기본 위치에서 얼마나 떨어진 곳에서 시작할지 (x,y)")]
+    private Vector2 slideInOffset = new Vector2(-80f, 0f);
+
+    private RectTransform _rect;
+    private CanvasGroup _canvasGroup;
+    private Coroutine _slideCoroutine;
 
 
+    private void Awake()
+    {
+        _rect = transform as RectTransform;
+        _canvasGroup = GetComponent<CanvasGroup>();
+        if (_canvasGroup == null)
+        {
+            _canvasGroup = gameObject.AddComponent<CanvasGroup>();
+        }
+    }
 
-
+    private void OnEnable()
+    {
+        if (playSlideOnEnable)
+        {
+            PlaySlideIn();
+        }
+    }
 
     /// <summary>
-    /// 관제탑(ChatManager)에서 호출할 함수입니다.
-    /// 이제 텍스트를 '즉시' 설정하지 않고, '타이핑 애니메이션'을 시작시킵니다.
+    /// 외부에서 강제로 슬라이드 인을 실행하고 싶을 때 호출
+    /// </summary>
+    public void PlaySlideIn()
+    {
+        if (_rect == null) return;
+
+        // 이전 슬라이드 코루틴이 돌고 있으면 중단
+        if (_slideCoroutine != null)
+        {
+            StopCoroutine(_slideCoroutine);
+            _slideCoroutine = null;
+        }
+
+        // 최종 위치 기억
+        Vector2 targetPos = _rect.anchoredPosition;
+
+        // 시작 위치를 오프셋만큼 밀어둠
+        _rect.anchoredPosition = targetPos + slideInOffset;
+
+        // 투명하게 시작
+        _canvasGroup.alpha = 0f;
+
+        _slideCoroutine = StartCoroutine(SlideInRoutine(targetPos));
+    }
+
+    private IEnumerator SlideInRoutine(Vector2 targetPos)
+    {
+        float t = 0f;
+        Vector2 startPos = _rect.anchoredPosition;
+
+        while (t < 1f)
+        {
+            t += Time.deltaTime / slideDuration;
+            // 부드러운 감속(Ease-out)
+            float eased = 1f - Mathf.Pow(1f - t, 3f);
+
+            _rect.anchoredPosition = Vector2.Lerp(startPos, targetPos, eased);
+            _canvasGroup.alpha = eased;
+
+            yield return null;
+        }
+
+        _rect.anchoredPosition = targetPos;
+        _canvasGroup.alpha = 1f;
+        _slideCoroutine = null;
+    }
+
+    /// <summary>
+    /// 관제 역할 스크립트에서 호출하는 텍스트 세팅
     /// </summary>
     public void SetText(string message)
     {
-        // 1. ⭐️ 만약 이전 타이핑 애니메이션이 실행 중이었다면, 즉시 중지!
-        // (예: "생각 중..."이 타이핑되다가, 답변이 와서 덮어쓸 때)
+        // 타이핑 중이면 중단
         if (_typingCoroutine != null)
         {
             StopCoroutine(_typingCoroutine);
@@ -37,37 +107,26 @@ public class PopupController : MonoBehaviour
 
         if (answerText == null)
         {
-            Debug.LogError("PopupController에 'Answer Text'가 연결되지 않았습니다!");
+            Debug.LogError("[PopupController] TextMeshProUGUI가 연결되지 않았습니다.");
             return;
         }
 
-        // 2. ⭐️ 새로운 타이핑 코루틴을 시작하고, 제어할 수 있도록 저장합니다.
         _typingCoroutine = StartCoroutine(AnimateTypingText(message));
     }
 
-    /// <summary>
-    /// 텍스트를 한 글자씩 타이핑하는 애니메이션 코루틴
-    /// </summary>
     private IEnumerator AnimateTypingText(string fullMessage)
     {
-        // 1. 텍스트를 비워서 "초기화"
         answerText.text = "";
 
-        // 2. 메시지를 한 글자씩 루프
         foreach (char letter in fullMessage)
         {
-            answerText.text += letter; // 텍스트에 한 글자 추가
-            yield return new WaitForSeconds(typingSpeed); // 딜레이
+            answerText.text += letter;
+            yield return new WaitForSeconds(typingSpeed);
         }
 
-        // 3. ⭐️ 타이핑이 끝났으므로 "리모컨" 변수를 비움
         _typingCoroutine = null;
     }
 
-
-    /// <summary>
-    /// (선택) 팝업에 '닫기' 버튼이 있다면 이 함수를 연결하세요.
-    /// </summary>
     public void ClosePopup()
     {
         gameObject.SetActive(false);

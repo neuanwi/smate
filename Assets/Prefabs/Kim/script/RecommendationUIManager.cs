@@ -1,54 +1,47 @@
 using UnityEngine;
-using UnityEngine.UI; // LayoutRebuilder
-using System; // Action
-using System.Collections; // IEnumerator
-using UnityEngine.Networking; // UnityWebRequest
-using System.Text; // Encoding
+using UnityEngine.UI;           // RectTransformUtility, LayoutRebuilder
+using System.Collections;       // IEnumerator
+using UnityEngine.Networking;   // UnityWebRequest
+using System.Text;              // Encoding
 
 /// <summary>
-/// (하이브리드) 4방향 로직으로 스폰하고, 캐릭터를 따라다니도록 관리합니다.
+/// 추천(위티 코멘트/앱 추천)이 오면 말풍선과 체크 버튼을 4방향으로 띄우고,
+/// 캐릭터를 따라다니게 만든다.
+/// 체크 버튼은 슬라이드 인으로 등장한다.
 /// </summary>
 public class RecommendationUIManager : MonoBehaviour
 {
     [Header("핵심 연결")]
-    [Tooltip("말풍선을 띄워줄 PopupSpawner")]
-    [SerializeField]
-    private PopupSpawner bubbleSpawner;
+    [SerializeField] private PopupSpawner bubbleSpawner;
 
-    [Header("체크 버튼 프리팹 (4방향)")] // ⭐️ (v1) 4방향 프리팹 사용
-    [SerializeField]
-    private GameObject leftLowCheckButtonPrefab;
-    [SerializeField]
-    private GameObject leftHighCheckButtonPrefab;
-    [SerializeField]
-    private GameObject rightLowCheckButtonPrefab;
-    [SerializeField]
-    private GameObject rightHighCheckButtonPrefab;
+    [Header("체크 버튼 프리팹 (4방향)")]
+    [SerializeField] private GameObject leftLowCheckButtonPrefab;
+    [SerializeField] private GameObject leftHighCheckButtonPrefab;
+    [SerializeField] private GameObject rightLowCheckButtonPrefab;
+    [SerializeField] private GameObject rightHighCheckButtonPrefab;
 
     [Header("위치 계산 참조")]
-    [SerializeField]
-    private Canvas parentCanvas;
-    [SerializeField]
-    private Camera mainCamera;
-    [SerializeField]
-    private GameObject kirbyCharacter;
-    [SerializeField]
-    private GameObject shihoCharacter;
+    [SerializeField] private Canvas parentCanvas;
+    [SerializeField] private Camera mainCamera;
+    [SerializeField] private GameObject kirbyCharacter;
+    [SerializeField] private GameObject shihoCharacter;
 
     [Header("위치 오프셋")]
-    [Tooltip("캐릭터로부터의 UI 오프셋 (체크 버튼용)")]
-    [SerializeField]
-    private Vector2 checkButtonOffset = new Vector2(50f, 50f); // ⭐️ (v1) 오프셋
+    [Tooltip("캐릭터로부터 체크 버튼까지의 기본 오프셋")]
+    [SerializeField] private Vector2 checkButtonOffset = new Vector2(50f, 50f);
 
-    // --- 내부 변수 ---
+    [Header("체크 버튼 슬라이드 인")]
+    [Tooltip("슬라이드 인 시간")]
+    [SerializeField] private float checkSlideDuration = 0.25f;
+    [Tooltip("기본 슬라이드 시작 오프셋 (왼쪽에서 들어오게)")]
+    [SerializeField] private Vector2 checkSlideOffset = new Vector2(-70f, 0f);
+
+    // --- 내부 상태 ---
     private PopupController _currentBubble;
     private RecommendationButtonPopup _currentCheckButton;
-    private Transform _targetToFollow; // ⭐️ (v2) 따라다닐 대상
+    private Transform _targetToFollow;          // 따라다닐 캐릭터
+    private bool _isCheckSliding = false;       // 슬라이드 중이면 LateUpdate에서 위치 덮어쓰지 않음
 
-    // (AI 멈춤, 자동 닫기 관련 변수/코루틴 모두 삭제)
-
-
-    // ... (OnEnable, OnDisable은 그대로) ...
     private void OnEnable()
     {
         RecommendationPoller.OnWittyCommentReceived += HandleWittyComment;
@@ -61,75 +54,61 @@ public class RecommendationUIManager : MonoBehaviour
         RecommendationPoller.OnAppRecommendationReceived -= HandleAppRecommendation;
     }
 
-    // 👇 [수정됨] --------------------------------
+    // 위트 멘트만 오는 경우: 말풍선만 띄움
     private void HandleWittyComment(string message)
     {
-        CloseAllPopups(); // 👈 기존 팝업 닫기 (따라다니기 중지 포함)
+        CloseAllPopups();
 
-        // ⭐️ 1. 말풍선 띄우기 (PopupSpawner가 (v1)스폰 + (v2)따라다니기 시작)
         _currentBubble = bubbleSpawner.ShowPopupNearTarget();
-
         if (_currentBubble != null)
-        {
             _currentBubble.SetText(message);
-        }
-        // (AI 멈춤, 자동 닫기 코루틴 모두 삭제)
     }
-    // 👆 [수정됨] --------------------------------
 
-    // 👇 [수정됨] --------------------------------
     /// <summary>
-    /// (핵심 로직) 4방향 체크 버튼을 '스폰'하고, '따라다니기'를 시작합니다.
+    /// 앱 추천이 온 경우: 말풍선 + 체크버튼
     /// </summary>
     private void HandleAppRecommendation(string message, string appPath)
     {
         CloseAllPopups();
 
-        // --- 1. 말풍선 띄우기 (PopupSpawner가 알아서 함) ---
+        // 1. 말풍선 띄우기
         _currentBubble = bubbleSpawner.ShowPopupNearTarget();
         if (_currentBubble == null)
         {
-            Debug.LogError("[RecUIManager] 말풍선 스폰에 실패했습니다!");
+            Debug.LogError("[RecUIManager] 말풍선 스폰 실패");
             return;
         }
         _currentBubble.SetText(message);
 
-        // --- 2. 체크 버튼 띄우기 (직접 스폰 및 따라다니기) ---
-
-        // 2-1. 말풍선 피벗을 기준으로 체크 버튼 피벗 결정 (v1)
+        // 2. 체크 버튼을 말풍선의 반대쪽에 띄우기
         RectTransform bubbleRect = _currentBubble.transform as RectTransform;
-        Vector2 bubblePivot = bubbleRect.pivot;
+        Vector2 bubblePivot = bubbleRect.pivot;                  // (0 or 1, 0 or 1)
         Vector2 checkButtonPivot = new Vector2(1f - bubblePivot.x, bubblePivot.y);
 
-        // 2-2. 활성화된 캐릭터 타겟 찾기
+        // 2-1. 활성 캐릭터 찾기
         Transform activeCharacterTarget = null;
         if (kirbyCharacter != null && kirbyCharacter.activeInHierarchy)
-        {
             activeCharacterTarget = kirbyCharacter.transform;
-        }
         else if (shihoCharacter != null && shihoCharacter.activeInHierarchy)
-        {
             activeCharacterTarget = shihoCharacter.transform;
-        }
 
-        // 2-3. ⭐️ (v1) 필수 참조 항목 확인
-        if (activeCharacterTarget == null || mainCamera == null || parentCanvas == null ||
+        // 2-2. 필수 체크
+        if (activeCharacterTarget == null || parentCanvas == null || mainCamera == null ||
             leftLowCheckButtonPrefab == null || leftHighCheckButtonPrefab == null ||
             rightLowCheckButtonPrefab == null || rightHighCheckButtonPrefab == null)
         {
-            Debug.LogError("[RecUIManager] 체크 버튼 스폰에 필요한 참조가 부족합니다!");
+            Debug.LogError("[RecUIManager] 체크버튼을 만들기 위한 참조가 부족합니다.");
             return;
         }
 
-        // 2-4. ⭐️ (v1) 피벗에 맞는 프리팹 선택
-        GameObject prefabToSpawn = null;
-        Vector2 newPivot = checkButtonPivot;
-        if (newPivot.x == 0) // 좌측
-            prefabToSpawn = (newPivot.y == 0) ? leftLowCheckButtonPrefab : leftHighCheckButtonPrefab;
-        else // 우측
-            prefabToSpawn = (newPivot.y == 0) ? rightLowCheckButtonPrefab : rightHighCheckButtonPrefab;
+        // 2-3. 프리팹 선택
+        GameObject prefabToSpawn;
+        if (checkButtonPivot.x == 0f)   // 좌
+            prefabToSpawn = (checkButtonPivot.y == 0f) ? leftLowCheckButtonPrefab : leftHighCheckButtonPrefab;
+        else                            // 우
+            prefabToSpawn = (checkButtonPivot.y == 0f) ? rightLowCheckButtonPrefab : rightHighCheckButtonPrefab;
 
-        // 2-5. ⭐️ (v1) 위치 계산
+        // 2-4. 화면좌표 → 캔버스 로컬좌표
         Vector2 screenPos = mainCamera.WorldToScreenPoint(activeCharacterTarget.position);
         Vector2 localPoint;
         RectTransformUtility.ScreenPointToLocalPointInRectangle(
@@ -139,133 +118,96 @@ public class RecommendationUIManager : MonoBehaviour
             out localPoint
         );
 
-        // 2-6. ⭐️ (v1) 오프셋 적용
-        float offsetX = (checkButtonPivot.x == 0) ? checkButtonOffset.x : -checkButtonOffset.x;
-        float offsetY = (checkButtonPivot.y == 0) ? checkButtonOffset.y : -checkButtonOffset.y;
+        // 2-5. 오프셋
+        float offsetX = (checkButtonPivot.x == 0f) ? checkButtonOffset.x : -checkButtonOffset.x;
+        float offsetY = (checkButtonPivot.y == 0f) ? checkButtonOffset.y : -checkButtonOffset.y;
+        Vector2 finalPos = localPoint + new Vector2(offsetX, offsetY);
 
-        // 2-7. ⭐️ (v1) 인스턴스 생성 및 '교체'
-        // (피벗이 달라지면 기존 인스턴스 파괴)
+        // 2-6. 기존 체크버튼 피벗 다르면 파괴
         if (_currentCheckButton != null)
         {
             RectTransform existingRect = _currentCheckButton.transform as RectTransform;
-            if (existingRect != null && existingRect.pivot != newPivot)
+            if (existingRect != null && existingRect.pivot != checkButtonPivot)
             {
                 Destroy(_currentCheckButton.gameObject);
                 _currentCheckButton = null;
             }
         }
 
+        // 2-7. 새로 생성
         if (_currentCheckButton == null)
         {
             GameObject cbInstance = Instantiate(prefabToSpawn, parentCanvas.transform);
             _currentCheckButton = cbInstance.GetComponent<RecommendationButtonPopup>();
-
             if (_currentCheckButton == null)
             {
-                Debug.LogError($"'{prefabToSpawn.name}' 프리팹에 RecommendationButtonPopup.cs 스크립트가 없습니다!");
+                Debug.LogError($"[RecUIManager] {prefabToSpawn.name} 에 RecommendationButtonPopup이 없습니다.");
                 Destroy(cbInstance);
                 return;
             }
         }
 
-        _currentCheckButton.gameObject.SetActive(true); // ⭐️ 활성화
+        _currentCheckButton.gameObject.SetActive(true);
         RectTransform cbRect = _currentCheckButton.transform as RectTransform;
-
-        // 2-8. (v1) 피벗 및 위치 설정
         cbRect.pivot = checkButtonPivot;
-        cbRect.anchoredPosition = localPoint + new Vector2(offsetX, offsetY);
-        LayoutRebuilder.ForceRebuildLayoutImmediate(cbRect);
 
-        // 2-9. (v2) 따라다닐 대상으로 저장
+        // 2-8. 슬라이드 시작 위치 세팅
+        // pivot이 오른쪽이라면 오른쪽에서 들어오게, 왼쪽이라면 왼쪽에서 들어오게 방향 보정
+        Vector2 dynamicSlideOffset = checkSlideOffset;
+        if (checkButtonPivot.x == 1f)       // 우측 버튼이면
+            dynamicSlideOffset.x = -checkSlideOffset.x;
+
+        cbRect.anchoredPosition = finalPos + dynamicSlideOffset;
+
+        // CanvasGroup 확보 후 알파 0
+        CanvasGroup cbCg = _currentCheckButton.GetComponent<CanvasGroup>();
+        if (cbCg == null) cbCg = _currentCheckButton.gameObject.AddComponent<CanvasGroup>();
+        cbCg.alpha = 0f;
+
+        // 2-9. 슬라이드 인 시작
+        StartCoroutine(SlideInCheckButton(cbRect, cbCg, finalPos));
+
+        // 2-10. 따라다닐 대상 저장
         _targetToFollow = activeCharacterTarget;
 
-        // 2-10. 버튼 콜백 설정
+        // 2-11. 버튼 콜백 설정
         _currentCheckButton.Setup(
-            onAccept: () => { OnAcceptRecommendation(appPath); },
-            onDecline: () => { OnDeclineRecommendation(); }
+            onAccept: () => OnAcceptRecommendation(appPath),
+            onDecline: OnDeclineRecommendation
         );
-
-        // (AI 멈춤, 자동 닫기 코루틴 모두 삭제)
-    }
-    // 👆 [수정됨] --------------------------------
-
-
-    // --- 팝업 제어 로직 ---
-
-    // (OnAcceptRecommendation, SendExecuteCommand, OnDeclineRecommendation은 그대로)
-    private void OnAcceptRecommendation(string path)
-    {
-        Debug.Log($"[RecUIManager] ⭐ 앱 실행 요청! 경로: {path}");
-        StartCoroutine(SendExecuteCommand(path));
-        CloseAllPopups(); // 👈 따라다니기 중지 포함
     }
 
-    private IEnumerator SendExecuteCommand(string appPath)
+    // 체크 버튼 슬라이드 인 코루틴
+    private IEnumerator SlideInCheckButton(RectTransform rect, CanvasGroup cg, Vector2 targetPos)
     {
-        string url = "http://localhost:5001/execute";
-        string escapedAppPath = appPath.Replace("\\", "\\\\").Replace("\"", "\\\"");
-        string jsonBody = $"{{\"command\": \"{escapedAppPath}\"}}";
-        using (UnityWebRequest www = new UnityWebRequest(url, "POST"))
+        _isCheckSliding = true;
+
+        float t = 0f;
+        Vector2 startPos = rect.anchoredPosition;
+
+        while (t < 1f)
         {
-            byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonBody);
-            www.uploadHandler = (UploadHandler)new UploadHandlerRaw(bodyRaw);
-            www.downloadHandler = (DownloadHandler)new DownloadHandlerBuffer();
-            www.SetRequestHeader("Content-Type", "application/json");
-            Debug.Log($"[RecUIManager] 파이썬 서버({url}) 호출 시도: {jsonBody}");
-            yield return www.SendWebRequest();
-            if (www.result != UnityWebRequest.Result.Success)
-            {
-                Debug.LogError($"[RecUIManager] 파이썬 서버 호출 실패: {www.error}");
-                Debug.LogError($"[RecUIManager] 실패 본문: {www.downloadHandler.text}");
-            }
-            else
-            {
-                Debug.Log($"[RecUIManager] 파이썬 서버 응답: {www.downloadHandler.text}");
-            }
-        }
-    }
+            t += Time.deltaTime / checkSlideDuration;
+            float eased = 1f - Mathf.Pow(1f - t, 3f);   // ease-out
 
-    private void OnDeclineRecommendation()
-    {
-        Debug.Log("[RecUIManager] 추천 거절됨.");
-        CloseAllPopups(); // 👈 따라다니기 중지 포함
-    }
+            rect.anchoredPosition = Vector2.Lerp(startPos, targetPos, eased);
+            cg.alpha = eased;
 
-    // 👇 [수정됨] --------------------------------
-    public void CloseAllPopups()
-    {
-        // ⭐️ 1. 말풍선을 숨기고, PopupSpawner의 따라다니기를 중지시킴
-        if (bubbleSpawner != null && _currentBubble != null)
-        {
-            bubbleSpawner.HidePopup();
-        }
-        _currentBubble = null;
-
-        // ⭐️ 2. 체크 버튼을 파괴 (재활용을 원하면 SetActive(false)로 변경)
-        if (_currentCheckButton != null)
-        {
-            Destroy(_currentCheckButton.gameObject);
-            _currentCheckButton = null;
+            yield return null;
         }
 
-        // ⭐️ 3. 이 스크립트의 따라다니기를 중지시킴
-        _targetToFollow = null;
+        rect.anchoredPosition = targetPos;
+        cg.alpha = 1f;
+        _isCheckSliding = false;
     }
-    // 👆 [수정됨] --------------------------------
 
-
-    // 👇 [신규 추가] --------------------------------
-    /// <summary>
-    /// (v2) LateUpdate에서 체크 버튼이 캐릭터를 따라다니도록 위치를 갱신합니다.
-    /// </summary>
-    void LateUpdate()
+    private void LateUpdate()
     {
-        // ⭐️ 따라다닐 대상(_targetToFollow)과 체크 버튼(_currentCheckButton)이 모두 유효할 때만 실행
-        if (_targetToFollow != null && _currentCheckButton != null)
+        // 체크버튼이 존재하고, 따라다닐 대상이 있고, 그리고 슬라이드 중이 아닐 때만 위치 갱신
+        if (_targetToFollow != null && _currentCheckButton != null && !_isCheckSliding)
         {
             RectTransform cbRect = _currentCheckButton.transform as RectTransform;
 
-            // 1. 새 위치 계산
             Vector2 screenPos = mainCamera.WorldToScreenPoint(_targetToFollow.position);
             Vector2 localPoint;
             RectTransformUtility.ScreenPointToLocalPointInRectangle(
@@ -275,17 +217,72 @@ public class RecommendationUIManager : MonoBehaviour
                 out localPoint
             );
 
-            // 2. ⭐️ (v1)의 오프셋 로직을 매 프레임 다시 계산
             Vector2 currentPivot = cbRect.pivot;
-            float offsetX = (currentPivot.x == 0) ? checkButtonOffset.x : -checkButtonOffset.x;
-            float offsetY = (currentPivot.y == 0) ? checkButtonOffset.y : -checkButtonOffset.y;
+            float offsetX = (currentPivot.x == 0f) ? checkButtonOffset.x : -checkButtonOffset.x;
+            float offsetY = (currentPivot.y == 0f) ? checkButtonOffset.y : -checkButtonOffset.y;
 
-            // 3. ⭐️ 최종 위치 적용
             cbRect.anchoredPosition = localPoint + new Vector2(offsetX, offsetY);
-
-            // (선택적) 
-            // LayoutRebuilder.ForceRebuildLayoutImmediate(cbRect);
         }
     }
-    // 👆 [신규 추가] --------------------------------
+
+    // --- 수락 / 거절 / 닫기 ---
+
+    private void OnAcceptRecommendation(string path)
+    {
+        Debug.Log($"[RecUIManager] 앱 실행 요청: {path}");
+        StartCoroutine(SendExecuteCommand(path));
+        CloseAllPopups();
+    }
+
+    private IEnumerator SendExecuteCommand(string appPath)
+    {
+        string url = "http://localhost:5001/execute";
+        string escapedAppPath = appPath.Replace("\\", "\\\\").Replace("\"", "\\\"");
+        string jsonBody = $"{{\"command\": \"{escapedAppPath}\"}}";
+
+        using (UnityWebRequest www = new UnityWebRequest(url, "POST"))
+        {
+            byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonBody);
+            www.uploadHandler = new UploadHandlerRaw(bodyRaw);
+            www.downloadHandler = new DownloadHandlerBuffer();
+            www.SetRequestHeader("Content-Type", "application/json");
+
+            yield return www.SendWebRequest();
+
+            if (www.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogError($"[RecUIManager] 서버 호출 실패: {www.error}");
+                Debug.LogError($"[RecUIManager] 응답: {www.downloadHandler.text}");
+            }
+            else
+            {
+                Debug.Log($"[RecUIManager] 응답: {www.downloadHandler.text}");
+            }
+        }
+    }
+
+    private void OnDeclineRecommendation()
+    {
+        Debug.Log("[RecUIManager] 추천 거절");
+        CloseAllPopups();
+    }
+
+    public void CloseAllPopups()
+    {
+        // 말풍선 숨기기
+        if (bubbleSpawner != null && _currentBubble != null)
+            bubbleSpawner.HidePopup();     // 사용 중인 PopupSpawner에 이 메서드가 있다고 가정
+
+        _currentBubble = null;
+
+        // 체크 버튼 제거
+        if (_currentCheckButton != null)
+        {
+            Destroy(_currentCheckButton.gameObject);
+            _currentCheckButton = null;
+        }
+
+        _targetToFollow = null;
+        _isCheckSliding = false;
+    }
 }
