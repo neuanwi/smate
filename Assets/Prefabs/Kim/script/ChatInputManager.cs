@@ -22,6 +22,9 @@ public class ChatInputManager : MonoBehaviour
     public string currentSessionId = "unityUser001";
     public string currentPersonaDomain = "tsundere";
 
+    // ⭐️ [추가] 이 값을 실제 사용하는 ID로 변경하세요 (예: "roy17-desktop")
+    public string computerId = "roy17-desktop";
+
     [Header("캐릭터 페르소나 설정")]
     public GameObject kirbyCharacter;
     public string kirbyPersonaName = "kirby";
@@ -112,8 +115,63 @@ public class ChatInputManager : MonoBehaviour
 
         string activePersona = ResolveActivePersona();
 
-        string url = $"{backendBaseUrl}?sessionId={currentSessionId}&domain={activePersona}";
+
+
+
+
+
+
+
+
+
+
+
+
+
+        //// (약 128 라인)
+        //string url = $"{backendBaseUrl}?sessionId={currentSessionId}&domain={activePersona}";
+        //Debug.Log($"[ChatInputManager] 요청: {url}");
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        string url = $"{backendBaseUrl}?sessionId={currentSessionId}&domain={activePersona}&computerId={computerId}";
         Debug.Log($"[ChatInputManager] 요청: {url}");
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         UnityWebRequest www = new UnityWebRequest(url, "POST");
         byte[] bodyRaw = Encoding.UTF8.GetBytes(question);
