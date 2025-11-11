@@ -7,6 +7,13 @@ using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.UI;
 
+// ⭐️ [추가됨] 스크린샷(P/Invoke)에 필요한 네임스페이스
+using System.Runtime.InteropServices;
+using System.Drawing; // 👈 [중요] System.Drawing.dll을 Assets 폴더에 추가해야 합니다!
+using System.Drawing.Imaging;
+using System.IO;
+
+
 public class ChatInputManager : MonoBehaviour
 {
     [Header("필수 연결 요소")]
@@ -114,70 +121,52 @@ public class ChatInputManager : MonoBehaviour
             _activePopup.SetText("생각 중...");
 
         string activePersona = ResolveActivePersona();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        //// (약 128 라인)
-        //string url = $"{backendBaseUrl}?sessionId={currentSessionId}&domain={activePersona}";
-        //Debug.Log($"[ChatInputManager] 요청: {url}");
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         string url = $"{backendBaseUrl}?sessionId={currentSessionId}&domain={activePersona}&computerId={computerId}";
         Debug.Log($"[ChatInputManager] 요청: {url}");
 
+        // 1. WWWForm 생성
+        WWWForm form = new WWWForm();
 
+        // 2. "question" 필드에 텍스트 추가
+        form.AddField("question", question);
 
+        byte[] screenshotBytes = null;
 
+        // 3. "여기서" 키워드가 포함되면 스크린샷 캡처
+        if (question.Contains("여기서"))
+        {
+            Debug.Log("[ChatInputManager] '여기서' 감지됨. 데스크탑 캡처 시도...");
+            try
+            {
+                // ⭐️ (주의) 이 작업은 동기식이므로 캡처 동안 잠시 멈출 수 있습니다.
+                screenshotBytes = DesktopCapture.CaptureDesktopAsPNG();
 
+                if (screenshotBytes != null)
+                {
+                    // 4. "screenshot" 필드에 이미지 바이트 추가
+                    form.AddBinaryData("screenshot", screenshotBytes, "desktop_screenshot.png", "image/png");
+                    Debug.Log($"[ChatInputManager] 데스크탑 스크린샷 폼에 추가 완료 (크기: {screenshotBytes.Length} bytes)");
+                }
+                else
+                {
+                    Debug.LogWarning("[ChatInputManager] 스크린샷 캡처 실패 (Bytes == null)");
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[ChatInputManager] 스크린샷 캡처 중 예외 발생: {e.Message}");
+            }
+        }
 
+        // 5. WWWForm을 사용하여 POST 요청 생성 (Content-Type이 multipart/form-data로 자동 설정됨)
+        UnityWebRequest www = UnityWebRequest.Post(url, form);
 
+        // ⭐️ [변경됨] 기존 text/plain 관련 핸들러 및 헤더 설정 코드 삭제
+        // byte[] bodyRaw = Encoding.UTF8.GetBytes(question); // (삭제)
+        // www.uploadHandler = new UploadHandlerRaw(bodyRaw); // (삭제)
+        // www.SetRequestHeader("Content-Type", "text/plain; charset=utf-8"); // (삭제)
 
-
-
-
-
-
-
-
-
-
-
-
-
-        UnityWebRequest www = new UnityWebRequest(url, "POST");
-        byte[] bodyRaw = Encoding.UTF8.GetBytes(question);
-        www.uploadHandler = new UploadHandlerRaw(bodyRaw);
         www.downloadHandler = new DownloadHandlerBuffer();
-        www.SetRequestHeader("Content-Type", "text/plain; charset=utf-8");
 
         yield return www.SendWebRequest();
 
@@ -194,6 +183,8 @@ public class ChatInputManager : MonoBehaviour
         else
         {
             string raw = www.downloadHandler.text;
+
+            // ... (이하 JSON 파싱 및 감정 처리 로직은 기존과 동일) ...
 
             // 1) 백엔드가 우리가 말한 형태로 내려준 경우
             //    { "text": "...", "task": { "time": "...", "text": "..." } }
@@ -245,10 +236,7 @@ public class ChatInputManager : MonoBehaviour
                     Debug.Log("[감정 없음]");
             }
 
-            // 3. 감정이 감지되었고, 1/3 확률 당첨 시 스티커 표시
-
             // 3. 감정이 감지되었으면 캐릭터 Animator에 Trigger 전송
-            // 👇 [수정됨] --------------------------------
             if (!string.IsNullOrEmpty(detectedEmotion))
             {
                 // 1. 활성화된 캐릭터의 Animator 찾기
@@ -259,7 +247,6 @@ public class ChatInputManager : MonoBehaviour
                 }
                 else if (shihoCharacter != null && shihoCharacter.activeInHierarchy)
                 {
-                    // (⭐️ ShihoAI.cs에도 kirby와 동일한 Trigger 파라미터(isHappy 등)가 있어야 합니다!)
                     activeAnimator = shihoCharacter.GetComponent<Animator>();
                 }
 
@@ -288,27 +275,12 @@ public class ChatInputManager : MonoBehaviour
                         activeAnimator.SetTrigger(triggerName);
                     }
                 }
-
-                // (스티커 로직은 일단 그대로 둡니다)
-                if (popupSpawner != null && _activePopup != null)
-                {
-                    // ... (스티커 스포너를 호출하는 로직이 나중에 들어갈 수 있음) ...
-                    //여기에 감정표현 구현! (<- Animator가 구현했으므로 이 주석은 이제 지워도 됨)
-                }
             }
-            // 👆 [수정됨] --------------------------------
         }
-
 
         // 4. 마지막 대화로 저장
         _lastConversationText = finalText;
         _lastActivePersonaDomain = activePersona;
-
-        //if (_activePopup != null)
-        //    _activePopup.SetText(finalText);
-
-        //_lastConversationText = finalText;
-        //_lastActivePersonaDomain = activePersona;
     }
 
     // 배경 클릭해서 닫기
@@ -444,5 +416,108 @@ public class ChatInputManager : MonoBehaviour
     private class Part
     {
         public string text;
+    }
+}
+
+
+// ======================================================================
+// ⭐️ [신규 추가] P/Invoke를 사용한 Windows 데스크탑 캡처 헬퍼 클래스
+// (System.Drawing.dll 참조가 필요합니다!)
+// ======================================================================
+public class DesktopCapture
+{
+    // C#에서 사용할 GDI 함수들 임포트
+    [DllImport("gdi32.dll", SetLastError = true)]
+    private static extern bool BitBlt(
+        IntPtr hdcDest, int nXDest, int nYDest, int nWidth, int nHeight,
+        IntPtr hdcSrc, int nXSrc, int nYSrc,
+        TernaryRasterOperations dwRop
+    );
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetDesktopWindow();
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetWindowDC(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern int ReleaseDC(IntPtr hWnd, IntPtr hDC);
+
+    [DllImport("user32.dll")]
+    private static extern int GetSystemMetrics(int nIndex);
+
+    [DllImport("gdi32.dll")]
+    private static extern IntPtr CreateCompatibleDC(IntPtr hDC);
+
+    [DllImport("gdi32.dll")]
+    private static extern IntPtr CreateCompatibleBitmap(IntPtr hDC, int nWidth, int nHeight);
+
+    [DllImport("gdi32.dll")]
+    private static extern IntPtr SelectObject(IntPtr hDC, IntPtr hGdiObj);
+
+    [DllImport("gdi32.dll")]
+    private static extern bool DeleteObject(IntPtr hObject);
+
+    [DllImport("gdi32.dll")]
+    private static extern bool DeleteDC(IntPtr hDC);
+
+    // GetSystemMetrics 상수
+    private const int SM_CXSCREEN = 0;
+    private const int SM_CYSCREEN = 1;
+
+    // BitBlt 연산
+    private enum TernaryRasterOperations : uint
+    {
+        SRCCOPY = 0x00CC0020
+    }
+
+    /// <summary>
+    /// (Windows 전용) 현재 바탕화면 전체를 캡처하여 PNG 바이트 배열로 반환합니다.
+    /// </summary>
+    /// <returns>PNG 이미지의 byte[] 또는 실패 시 null</returns>
+    public static byte[] CaptureDesktopAsPNG()
+    {
+        IntPtr hDesktop = GetDesktopWindow();
+        if (hDesktop == IntPtr.Zero) return null;
+
+        IntPtr hdcSrc = GetWindowDC(hDesktop);
+        if (hdcSrc == IntPtr.Zero) return null;
+
+        int width = GetSystemMetrics(SM_CXSCREEN);
+        int height = GetSystemMetrics(SM_CYSCREEN);
+
+        IntPtr hdcDest = CreateCompatibleDC(hdcSrc);
+        IntPtr hBitmap = CreateCompatibleBitmap(hdcSrc, width, height);
+        IntPtr hOld = SelectObject(hdcDest, hBitmap);
+
+        try
+        {
+            // 화면 DC의 내용을 비트맵 DC로 복사
+            BitBlt(hdcDest, 0, 0, width, height, hdcSrc, 0, 0, TernaryRasterOperations.SRCCOPY);
+
+            // GDI 비트맵 핸들(hBitmap)을 System.Drawing.Bitmap 객체로 변환
+            using (Bitmap bitmap = Bitmap.FromHbitmap(hBitmap))
+            {
+                // Bitmap을 메모리 스트림에 PNG 형식으로 저장
+                using (MemoryStream ms = new MemoryStream())
+                {
+                    bitmap.Save(ms, ImageFormat.Png);
+                    return ms.ToArray();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[DesktopCapture] 캡처 실패: {ex.Message}");
+            return null;
+        }
+        finally
+        {
+            // 사용한 GDI 객체들 해제
+            SelectObject(hdcDest, hOld);
+            DeleteObject(hBitmap);
+            DeleteDC(hdcDest);
+            ReleaseDC(hDesktop, hdcSrc);
+        }
     }
 }
