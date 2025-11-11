@@ -1550,6 +1550,12 @@ RectTransform:
     type: 3}
   m_PrefabInstance: {fileID: 379610425}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &419463956 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7987760012260920752, guid: 4a19e560fc181184fbb8379c42186abf,
+    type: 3}
+  m_PrefabInstance: {fileID: 1204982543}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &464013501
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1941,6 +1947,12 @@ MonoBehaviour:
   m_FlexibleWidth: -1
   m_FlexibleHeight: -1
   m_LayoutPriority: 1
+--- !u!1 &556311194 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1313149480043806613, guid: 4a19e560fc181184fbb8379c42186abf,
+    type: 3}
+  m_PrefabInstance: {fileID: 1204982543}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &589734435
 GameObject:
   m_ObjectHideFlags: 0
@@ -2073,52 +2085,17 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!21 &669794090
-Material:
-  serializedVersion: 8
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: UI/RoundedCorners/RoundedCorners
-  m_Shader: {fileID: 4800000, guid: 0bd2ec5d73751e34a814274a454bec41, type: 3}
-  m_Parent: {fileID: 0}
-  m_ModifiedSerializedProperties: 0
-  m_ValidKeywords: []
-  m_InvalidKeywords: []
-  m_LightmapFlags: 4
-  m_EnableInstancingVariants: 0
-  m_DoubleSidedGI: 0
-  m_CustomRenderQueue: -1
-  stringTagMap: {}
-  disabledShaderPasses: []
-  m_LockedProperties: 
-  m_SavedProperties:
-    serializedVersion: 3
-    m_TexEnvs:
-    - _MainTex:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    m_Ints: []
-    m_Floats:
-    - _ColorMask: 15
-    - _Stencil: 0
-    - _StencilComp: 8
-    - _StencilOp: 0
-    - _StencilReadMask: 255
-    - _StencilWriteMask: 255
-    - _UseUIAlphaClip: 0
-    m_Colors:
-    - _OuterUV: {r: 0, g: 0, b: 1, a: 1}
-    - _WidthHeightRadius: {r: 969.921, g: 389.085, b: 100, a: 0}
-  m_BuildTextureStacks: []
-  m_AllowLocking: 1
 --- !u!1 &695036296 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 5471099200364445136, guid: 902c805b077a9eb4d95d532b81763281,
     type: 3}
   m_PrefabInstance: {fileID: 930852550}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &734495846 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1565995809143556826, guid: 4a19e560fc181184fbb8379c42186abf,
+    type: 3}
+  m_PrefabInstance: {fileID: 1204982543}
   m_PrefabAsset: {fileID: 0}
 --- !u!1 &742967609
 GameObject:
@@ -2314,6 +2291,13 @@ MonoBehaviour:
   gridBackgroundCatcher: {fileID: 755876909}
   clickCatcher: {fileID: 222283772}
   uiOffset: {x: 0, y: 50, z: 0}
+  animatedMenuItems:
+  - {fileID: 2027254423}
+  - {fileID: 734495846}
+  - {fileID: 556311194}
+  - {fileID: 419463956}
+  menuAnimDuration: 0.15
+  menuAnimStagger: 0.05
 --- !u!1 &755876909
 GameObject:
   m_ObjectHideFlags: 0
@@ -3900,6 +3884,47 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b40a891c19a48e14f9a9909c20c9e04c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ForceNativeFullscreen
+--- !u!21 &1233383736
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: UI/RoundedCorners/RoundedCorners
+  m_Shader: {fileID: 4800000, guid: 0bd2ec5d73751e34a814274a454bec41, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _ColorMask: 15
+    - _Stencil: 0
+    - _StencilComp: 8
+    - _StencilOp: 0
+    - _StencilReadMask: 255
+    - _StencilWriteMask: 255
+    - _UseUIAlphaClip: 0
+    m_Colors:
+    - _OuterUV: {r: 0, g: 0, b: 1, a: 1}
+    - _WidthHeightRadius: {r: 969.921, g: 389.085, b: 100, a: 0}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1
 --- !u!1 &1276883214
 GameObject:
   m_ObjectHideFlags: 0
@@ -4596,7 +4621,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
-  m_Material: {fileID: 669794090}
+  m_Material: {fileID: 1233383736}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
@@ -4902,6 +4927,14 @@ MonoBehaviour:
   characterGridPanel: {fileID: 1547166928}
   gridBackgroundCatcher: {fileID: 755876909}
   clickCatcher: {fileID: 222283772}
+  uiOffset: {x: 0, y: 0, z: 0}
+  animatedMenuItems:
+  - {fileID: 2027254423}
+  - {fileID: 734495846}
+  - {fileID: 556311194}
+  - {fileID: 419463956}
+  menuAnimDuration: 0.15
+  menuAnimStagger: 0.05
 --- !u!1 &1632715388 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 9218369165462429185, guid: 4a19e560fc181184fbb8379c42186abf,
@@ -5457,7 +5490,7 @@ PrefabInstance:
     - target: {fileID: 5912048849385037296, guid: 39b380f2704173942b061e6187a78fc2,
         type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 279.47162
+      value: 279.47156
       objectReference: {fileID: 0}
     - target: {fileID: 6154637958135845493, guid: 39b380f2704173942b061e6187a78fc2,
         type: 3}
@@ -5771,6 +5804,13 @@ MonoBehaviour:
   gridBackgroundCatcher: {fileID: 755876909}
   clickCatcher: {fileID: 222283772}
   uiOffset: {x: 0, y: 0, z: 0}
+  animatedMenuItems:
+  - {fileID: 2027254423}
+  - {fileID: 734495846}
+  - {fileID: 556311194}
+  - {fileID: 419463956}
+  menuAnimDuration: 0.15
+  menuAnimStagger: 0.05
 --- !u!95 &1793924480
 Animator:
   serializedVersion: 7
@@ -6265,6 +6305,12 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 7399307073706555843, guid: b7e1e7806e63d634a8e7d769761d4ddd,
     type: 3}
   m_PrefabInstance: {fileID: 1993736556}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &2027254423 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3116050717488832741, guid: 4a19e560fc181184fbb8379c42186abf,
+    type: 3}
+  m_PrefabInstance: {fileID: 1204982543}
   m_PrefabAsset: {fileID: 0}
 --- !u!1 &2066519892
 GameObject:

@@ -1,5 +1,9 @@
 ﻿using System.Collections;
 using UnityEngine;
+// 👈 (KirbyAI.cs에는 있지만 ShihoAI.cs에는 아직 없는)
+// 👈 UI.Button을 사용하기 위해 using 문을 추가하는 것이 좋습니다.
+// 👈 (물론 지금 당장은 필요없지만, 다음 단계를 위해 미리 추가합니다)
+using UnityEngine.UI;
 
 public class ShihoAI : MonoBehaviour
 {
@@ -40,9 +44,18 @@ public class ShihoAI : MonoBehaviour
     public GameObject gridBackgroundCatcher;    // 그리드 배경 클릭 캐처
     // --- ⬆️⬆️⬆️ 추가 끝 ⬆️⬆️⬆️ ---
     public GameObject clickCatcher; // '허공' 클릭을 감지하는 메인 캐처
+
+    // 👈 --- [추가 1] KirbyAI와 동일하게 UI 오프셋 변수 추가 ---
+    public Vector3 uiOffset = new Vector3(0f, 0f, 0f); // (시호는 오프셋이 필요없다면 0,0,0으로 두세요)
+
     // AI가 메뉴 때문에 멈췄는지 기억
     private bool isPausedByMenu = false;
 
+    // 👈 --- [추가 2] 애니메이션 관련 변수들 추가 ---
+    [Header("Context Menu Animation")]
+    public GameObject[] animatedMenuItems; // 애니메이션을 적용할 메뉴 아이템(버튼)들
+    public float menuAnimDuration = 0.15f; // 각 아이템이 커지는 데 걸리는 시간
+    public float menuAnimStagger = 0.05f;  // 아이템이 순차적으로 나타나는 시간 간격
     // --- ⬆️⬆️⬆️ ---
 
     // 👈 [1] Start()를 Awake()로 변경합니다. (변수 초기화)
@@ -221,24 +234,28 @@ public class ShihoAI : MonoBehaviour
         bMouseDrag = false; // (KirbyAI 기능)
     }
 
-    // KirbyAI.cs 와 ShihoAI.cs 둘 다 수정
+    // 👈 --- [수정 3] OnMouseOver를 KirbyAI와 동일하게 수정 ---
     void OnMouseOver()
     {
-        // --- ⬇️⬇️⬇️ 바로 이 줄을 추가해야 합니다! ⬇️⬇️⬇️ ---
         // (수정) 그리드 패널이 켜져있는지 확인하는 변수
         bool isGridPanelActive = (characterGridPanel != null && characterGridPanel.activeSelf);
-        // --- ⬆️⬆️⬆️ ---
 
         if (Input.GetMouseButtonDown(1) && !bMouseDrag && !isGridPanelActive) // 👈 이제 이 변수를 알 수 있음
         {
-            StopAllCoroutines();
+            StopAllCoroutines(); // AI 행동 정지
 
             isPausedByMenu = true; // AI를 메뉴 때문에 멈췄다고 기록
 
             if (contextMenuPanel != null)
             {
+                // 패널의 위치를 캐릭터 위치로 이동 (기존 로직)
+                contextMenuPanel.transform.position = gameObject.transform.position + uiOffset; // 👈 uiOffset 적용
+
+                // 패널(배경)을 먼저 활성화
                 contextMenuPanel.SetActive(true);
-                contextMenuPanel.transform.position = gameObject.transform.position;
+
+                // 👈 애니메이션 코루틴 시작!
+                StartCoroutine(ShowAnimatedMenuItems());
             }
 
             // (추가한 버그 수정 코드)
@@ -254,5 +271,66 @@ public class ShihoAI : MonoBehaviour
                 contextMenuPanel.SetActive(false);
             }
         }
+    }
+
+    // 👈 --- [추가 4] 애니메이션 코루틴 2개 추가 ---
+
+    /// <summary>
+    /// 메뉴 아이템들을 순차적으로 보여주는 코루틴
+    /// </summary>
+    IEnumerator ShowAnimatedMenuItems()
+    {
+        // "깜빡임" 현상을 제거하기 위해
+        // 애니메이션 시작 전, 모든 버튼을 미리 끄고 크기를 리셋합니다.
+        foreach (var item in animatedMenuItems)
+        {
+            if (item != null)
+            {
+                item.SetActive(false);
+                item.transform.localScale = Vector3.zero;
+            }
+        }
+
+        // 이제 (깨끗한 상태에서) 하나씩 순차적으로 켭니다.
+        foreach (var item in animatedMenuItems)
+        {
+            if (item == null) continue;
+
+            // 아이템을 활성화 (이래야 애니메이션이 보임)
+            item.SetActive(true);
+
+            // 'PopIn' 애니메이션 코루틴을 각 아이템별로 실행
+            StartCoroutine(AnimateItemPopIn(item.transform));
+
+            // 다음 아이템이 나타날 때까지 약간 대기 (Stagger)
+            yield return new WaitForSeconds(menuAnimStagger);
+        }
+    }
+
+    /// <summary>
+    /// 개별 아이템의 크기를 0에서 1로 키우는 'Pop-in' 애니메이션
+    /// </summary>
+    IEnumerator AnimateItemPopIn(Transform itemTransform)
+    {
+        float timer = 0f;
+        while (timer < menuAnimDuration)
+        {
+            // 오브젝트가 중간에 비활성화되면(예: 배경 클릭) 코루틴 중지
+            if (itemTransform == null || !itemTransform.gameObject.activeInHierarchy)
+                yield break;
+
+            // 시간에 따라 크기를 0에서 1로 보간 (Ease-Out 효과 적용)
+            float progress = Mathf.Clamp01(timer / menuAnimDuration);
+            float scale = 1f - (1f - progress) * (1f - progress); // Quadratic Ease-Out
+
+            itemTransform.localScale = new Vector3(scale, scale, scale);
+
+            timer += Time.deltaTime;
+            yield return null;
+        }
+
+        // 애니메이션이 끝나면 정확히 1x1x1 크기로 고정
+        if (itemTransform != null)
+            itemTransform.localScale = Vector3.one;
     }
 }
